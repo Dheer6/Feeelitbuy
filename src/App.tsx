@@ -11,6 +11,10 @@ import { AuthModal } from './components/AuthModal';
 import { Header } from './components/Header';
 import { Product, User, Order, CartItem } from './types';
 import { mockProducts } from './data/mockProducts';
+import { productService, cartService, wishlistService, authService, orderService, addressService } from './lib/supabaseService';
+import { adaptDbProducts } from './lib/productAdapter';
+import { adaptDbOrders } from './lib/orderAdapter';
+import { supabase } from './lib/supabase';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<string>('home');
@@ -22,129 +26,496 @@ export default function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  // Admin-only full orders list
+  const [adminOrders, setAdminOrders] = useState<Order[]>([]);
+  const [adminOrdersHydrated, setAdminOrdersHydrated] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>(mockProducts); // start with mocks
+  const [productsLoading, setProductsLoading] = useState<boolean>(true);
+  const [productsError, setProductsError] = useState<string | null>(null);
+  const [cartHydrated, setCartHydrated] = useState(false);
+  const [wishlistHydrated, setWishlistHydrated] = useState(false);
+  const [ordersHydrated, setOrdersHydrated] = useState(false);
 
-  // Load cart from localStorage
+  // Check for existing session on mount
   useEffect(() => {
-    const savedCart = localStorage.getItem('feelitbuy_cart');
-    if (savedCart) {
-      setCart(JSON.parse(savedCart));
+    checkUser();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email);
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Immediate fallback so UI updates without waiting for profile row
+        const u = session.user;
+        setCurrentUser((prev: User | null) => prev || {
+          id: u.id,
+          name: (u.user_metadata?.full_name as string) || u.email?.split('@')[0] || 'User',
+          email: u.email || '',
+          phone: (u.user_metadata?.phone as string) || '',
+          role: 'customer',
+          createdAt: u.created_at || new Date().toISOString(),
+        });
+
+        // Retry loading profile (trigger-created) with backoff attempts
+        const attemptProfileLoad = async (attempt: number) => {
+          try {
+            const profile = await authService.getCurrentProfile();
+            if (profile) {
+              setCurrentUser({
+                id: profile.id,
+                name: profile.full_name || profile.email.split('@')[0],
+                email: profile.email,
+                phone: profile.phone || '',
+                role: profile.role,
+                createdAt: profile.created_at,
+              });
+              if (profile.role === 'admin') setCurrentPage('admin');
+              return; // success
+            }
+          } catch (err) {
+            // swallow; will retry
+          }
+          if (attempt < 5) {
+            setTimeout(() => attemptProfileLoad(attempt + 1), 300 * attempt);
+          }
+        };
+        attemptProfileLoad(1);
+      } else if (event === 'SIGNED_OUT') {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const checkUser = async () => {
+    try {
+      const user = await authService.getCurrentUser();
+      
+      if (user) {
+        let profileLoaded = false;
+        try {
+          const profile = await authService.getCurrentProfile();
+          if (profile) {
+            profileLoaded = true;
+            setCurrentUser({
+              id: profile.id,
+              name: profile.full_name || profile.email.split('@')[0],
+              email: profile.email,
+              phone: profile.phone || '',
+              role: profile.role,
+              createdAt: profile.created_at,
+            });
+          }
+        } catch (profileError) {
+          // fallback below
+        }
+        if (!profileLoaded) {
+          setCurrentUser({
+            id: user.id,
+            name: (user.user_metadata?.full_name as string) || user.email?.split('@')[0] || 'User',
+            email: user.email || '',
+            phone: (user.user_metadata?.phone as string) || '',
+            role: 'customer',
+            createdAt: user.created_at || new Date().toISOString(),
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error checking user:', error);
+    } finally {
+      setAuthLoading(false);
     }
-    const savedWishlist = localStorage.getItem('feelitbuy_wishlist');
-    if (savedWishlist) {
-      setWishlist(JSON.parse(savedWishlist));
+  };
+
+  // Load products from Supabase (after auth check completes so RLS applies if needed)
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setProductsLoading(true);
+        setProductsError(null);
+        const rows = await productService.getProducts();
+        const adapted = await adaptDbProducts(rows as any);
+        // Preserve selectedProduct mapping if it existed from mocks
+        setProducts(adapted.length > 0 ? adapted : mockProducts);
+      } catch (e: any) {
+        setProductsError(e.message || 'Failed to load products. Using local mock data.');
+        setProducts(mockProducts); // fallback
+      } finally {
+        setProductsLoading(false);
+      }
+    };
+    // Only attempt once initial auth loading complete (or if no auth)
+    if (!authLoading) {
+      loadProducts();
     }
-    const savedOrders = localStorage.getItem('feelitbuy_orders');
-    if (savedOrders) {
-      setOrders(JSON.parse(savedOrders));
+  }, [authLoading]);
+
+  // Load guest cart/wishlist from localStorage (if not logged in)
+  useEffect(() => {
+    if (!currentUser) {
+      const savedCart = localStorage.getItem('feelitbuy_cart');
+      if (savedCart) {
+        setCart(JSON.parse(savedCart));
+      }
+      const savedWishlist = localStorage.getItem('feelitbuy_wishlist');
+      if (savedWishlist) {
+        setWishlist(JSON.parse(savedWishlist));
+      }
     }
   }, []);
 
-  // Save cart to localStorage
+  // Save guest cart/wishlist to localStorage (only if not logged in)
   useEffect(() => {
-    localStorage.setItem('feelitbuy_cart', JSON.stringify(cart));
-  }, [cart]);
+    if (!currentUser) {
+      localStorage.setItem('feelitbuy_cart', JSON.stringify(cart));
+    }
+  }, [cart, currentUser]);
 
   useEffect(() => {
-    localStorage.setItem('feelitbuy_wishlist', JSON.stringify(wishlist));
-  }, [wishlist]);
+    if (!currentUser) {
+      localStorage.setItem('feelitbuy_wishlist', JSON.stringify(wishlist));
+    }
+  }, [wishlist, currentUser]);
 
-  useEffect(() => {
-    localStorage.setItem('feelitbuy_orders', JSON.stringify(orders));
-  }, [orders]);
-
-  const handleLogin = (email: string, password: string) => {
-    // Mock login - in real app, this would authenticate with backend
-    const user: User = {
-      id: '1',
-      name: email.split('@')[0],
-      email: email,
-      phone: '+1234567890',
-      role: email.includes('admin') ? 'admin' : 'user',
-      createdAt: new Date().toISOString(),
-    };
-    setCurrentUser(user);
+  const handleLogin = () => {
     setShowAuthModal(false);
-    if (user.role === 'admin') {
-      setCurrentPage('admin');
+    // Force immediate user check for faster UI update
+    checkUser();
+  };
+
+  const handleRegister = () => {
+    setShowAuthModal(false);
+    // After registration sign-in, ensure user reflected
+    checkUser();
+  };
+
+  // Hydrate cart & wishlist from Supabase after user becomes available
+  useEffect(() => {
+    const mergeGuestCart = async () => {
+      const guestCartRaw = localStorage.getItem('feelitbuy_cart');
+      if (guestCartRaw) {
+        try {
+          const guestCart: CartItem[] = JSON.parse(guestCartRaw);
+          for (const item of guestCart) {
+            await cartService.addToCart(item.product.id, item.quantity);
+          }
+          localStorage.removeItem('feelitbuy_cart');
+        } catch (e) {
+          console.error('Merging guest cart failed:', e);
+        }
+      }
+    };
+    const mergeGuestWishlist = async () => {
+      const guestWishlistRaw = localStorage.getItem('feelitbuy_wishlist');
+      if (guestWishlistRaw) {
+        try {
+          const guestWishlist: string[] = JSON.parse(guestWishlistRaw);
+          for (const pid of guestWishlist) {
+            if (!wishlist.includes(pid)) {
+              await wishlistService.addToWishlist(pid);
+            }
+          }
+          localStorage.removeItem('feelitbuy_wishlist');
+        } catch (e) {
+          console.error('Merging guest wishlist failed:', e);
+        }
+      }
+    };
+
+    const hydrateCart = async () => {
+      try {
+        const rows = await cartService.getCart();
+        const hydrated: CartItem[] = rows.map((r: any) => ({
+          product: adaptServerProduct(r),
+          quantity: r.quantity,
+          itemId: r.id,
+        }));
+        setCart(hydrated);
+        setCartHydrated(true);
+      } catch (e) {
+        console.error('Cart hydration failed:', e);
+      }
+    };
+
+    const hydrateWishlist = async () => {
+      try {
+        const rows = await wishlistService.getWishlist();
+        const ids = rows.map((r: any) => r.product_id);
+        setWishlist(ids);
+        setWishlistHydrated(true);
+      } catch (e) {
+        console.error('Wishlist hydration failed:', e);
+      }
+    };
+
+    const hydrateOrders = async () => {
+      try {
+        const rows = await orderService.getOrders();
+        const adapted = adaptDbOrders(rows as any);
+        setOrders(adapted);
+        setOrdersHydrated(true);
+      } catch (e) {
+        console.error('Orders hydration failed:', e);
+      }
+    };
+
+    const hydrateAdminOrders = async () => {
+      if (currentUser?.role !== 'admin') return;
+      try {
+        const rows = await orderService.getAllOrders();
+        const adapted = adaptDbOrders(rows as any);
+        setAdminOrders(adapted);
+        setAdminOrdersHydrated(true);
+      } catch (e) {
+        console.error('Admin orders hydration failed:', e);
+      }
+    };
+
+    if (currentUser) {
+      if (!cartHydrated) {
+        mergeGuestCart().then(hydrateCart);
+      }
+      if (!wishlistHydrated) {
+        mergeGuestWishlist().then(hydrateWishlist);
+      }
+      if (!ordersHydrated) {
+        hydrateOrders();
+      }
+      if (currentUser.role === 'admin' && !adminOrdersHydrated) {
+        hydrateAdminOrders();
+      }
+    }
+  }, [currentUser, cartHydrated, wishlistHydrated, ordersHydrated, adminOrdersHydrated]);
+
+  const handleLogout = async () => {
+    try {
+      await authService.signOut();
+      setCurrentUser(null);
+      setCurrentPage('home');
+    } catch (error) {
+      console.error('Error signing out:', error);
     }
   };
 
-  const handleRegister = (name: string, email: string, phone: string, password: string) => {
-    // Mock registration
-    const user: User = {
-      id: Date.now().toString(),
-      name,
-      email,
-      phone,
-      role: 'user',
-      createdAt: new Date().toISOString(),
+  // Placeholder image for server products missing images
+  const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/600x600.png?text=Product';
+
+  function adaptServerProduct(row: any): Product {
+    const base = row.products || row; // cart_items returns products(*) inside row
+    return {
+      id: base.id,
+      name: base.name || 'Unnamed Product',
+      description: base.description || 'No description provided.',
+      price: base.price || 0,
+      originalPrice: (base.price || 0) * 1.2,
+      category: 'electronics', // simplified until categories fully mapped
+      subcategory: 'general',
+      brand: 'Generic',
+      images: base.images && base.images.length ? base.images : [PLACEHOLDER_IMAGE],
+      specifications: {},
+      stock: 100,
+      rating: base.rating || 0,
+      reviewCount: base.reviews_count || 0,
+      featured: !!base.is_featured,
+      reviews: [],
     };
-    setCurrentUser(user);
-    setShowAuthModal(false);
-  };
+  }
 
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setCurrentPage('home');
-  };
-
-  const addToCart = (product: Product, quantity: number = 1) => {
-    setCart((prev) => {
-      const existingItem = prev.find((item) => item.product.id === product.id);
-      if (existingItem) {
-        return prev.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        );
+  const addToCart = async (product: Product, quantity: number = 1) => {
+    if (currentUser) {
+      try {
+        const row = await cartService.addToCart(product.id, quantity);
+        const adaptedProduct = adaptServerProduct(row);
+        setCart((prev: CartItem[]) => {
+          const existing = prev.find((i: CartItem) => i.product.id === product.id);
+          if (existing) {
+            return prev.map((i: CartItem) =>
+              i.product.id === product.id
+                ? { ...i, quantity: i.quantity + quantity, itemId: row.id }
+                : i
+            );
+          }
+          return [...prev, { product: adaptedProduct, quantity: row.quantity, itemId: row.id }];
+        });
+      } catch (e) {
+        console.error('Failed to add to server cart, falling back to local:', e);
+        setCart((prev: CartItem[]) => {
+          const existingItem = prev.find((item: CartItem) => item.product.id === product.id);
+          if (existingItem) {
+            return prev.map((item: CartItem) =>
+              item.product.id === product.id
+                ? { ...item, quantity: item.quantity + quantity }
+                : item
+            );
+          }
+          return [...prev, { product, quantity }];
+        });
       }
-      return [...prev, { product, quantity }];
-    });
+    } else {
+      // Guest local cart
+      setCart((prev: CartItem[]) => {
+        const existingItem = prev.find((item: CartItem) => item.product.id === product.id);
+        if (existingItem) {
+          return prev.map((item: CartItem) =>
+            item.product.id === product.id
+              ? { ...item, quantity: item.quantity + quantity }
+              : item
+          );
+        }
+        return [...prev, { product, quantity }];
+      });
+    }
   };
 
-  const updateCartQuantity = (productId: string, quantity: number) => {
+  const updateCartQuantity = async (productId: string, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(productId);
+      return;
+    }
+    if (currentUser) {
+      const item = cart.find((c: CartItem) => c.product.id === productId);
+      if (item?.itemId) {
+        try {
+          const row = await cartService.updateCartItem(item.itemId, quantity);
+          setCart((prev: CartItem[]) => prev.map((i: CartItem) => (i.product.id === productId ? { ...i, quantity: row.quantity } : i)));
+          return;
+        } catch (e) {
+          console.error('Failed to update server cart item, falling back local:', e);
+        }
+      }
+    }
+    // Fallback / guest
+    setCart((prev: CartItem[]) => prev.map((item: CartItem) => (item.product.id === productId ? { ...item, quantity } : item)));
+  };
+
+  const removeFromCart = async (productId: string) => {
+    if (currentUser) {
+      const item = cart.find((c: CartItem) => c.product.id === productId);
+      if (item?.itemId) {
+        try {
+          await cartService.removeFromCart(item.itemId);
+        } catch (e) {
+          console.error('Failed to remove from server cart, will still remove locally:', e);
+        }
+      }
+    }
+    setCart((prev: CartItem[]) => prev.filter((item: CartItem) => item.product.id !== productId));
+  };
+
+  const toggleWishlist = async (productId: string) => {
+    if (currentUser) {
+      if (wishlist.includes(productId)) {
+        try { await wishlistService.removeFromWishlist(productId); } catch (e) { console.error('Server wishlist remove failed:', e); }
+        setWishlist((prev: string[]) => prev.filter((id: string) => id !== productId));
+      } else {
+        try { await wishlistService.addToWishlist(productId); } catch (e) { console.error('Server wishlist add failed:', e); }
+        setWishlist((prev: string[]) => [...prev, productId]);
+      }
     } else {
-      setCart((prev) =>
-        prev.map((item) =>
-          item.product.id === productId ? { ...item, quantity } : item
-        )
+      setWishlist((prev: string[]) =>
+        prev.includes(productId)
+          ? prev.filter((id: string) => id !== productId)
+          : [...prev, productId]
       );
     }
   };
 
-  const removeFromCart = (productId: string) => {
-    setCart((prev) => prev.filter((item) => item.product.id !== productId));
+  const placeOrder = async (shippingDetails: any, paymentMethod: string) => {
+    if (!currentUser) {
+      alert('Please login to place an order');
+      return;
+    }
+    try {
+      // Create or get default address
+      let addressId: string;
+      try {
+        const existingAddresses = await addressService.getAddresses();
+        if (existingAddresses.length > 0) {
+          addressId = existingAddresses[0].id;
+        } else {
+          const addr = await addressService.createAddress({
+            full_name: currentUser.name,
+            phone: currentUser.phone || '',
+            address_line1: shippingDetails.street,
+            address_line2: null,
+            city: shippingDetails.city,
+            state: shippingDetails.state,
+            postal_code: shippingDetails.zipCode,
+            country: shippingDetails.country,
+            is_default: true,
+          });
+          addressId = addr.id;
+        }
+      } catch (addrErr) {
+        console.error('Address creation failed:', addrErr);
+        throw new Error('Failed to save shipping address');
+      }
+
+      // Build order items
+      const orderItems = cart.map((item: CartItem) => ({
+        product_id: item.product.id,
+        quantity: item.quantity,
+        price: item.product.price,
+      }));
+
+      const orderData = {
+        items: orderItems,
+        shipping_address_id: addressId,
+        payment_method: paymentMethod,
+      };
+
+      const createdOrder = await orderService.createOrder(orderData);
+      
+      // Fetch full order details
+      const fullOrder = await orderService.getOrder(createdOrder.id);
+      const adaptedOrder = adaptDbOrders([fullOrder as any])[0];
+      
+      setOrders((prev: Order[]) => [adaptedOrder, ...prev]);
+      setCart([]);
+      setCartHydrated(false); // trigger re-hydration (cart cleared on server)
+      setCurrentPage('order-tracking');
+      setSelectedOrder(adaptedOrder.id);
+    } catch (err: any) {
+      console.error('Order creation failed:', err);
+      alert(`Failed to place order: ${err.message || 'Unknown error'}`);
+    }
   };
 
-  const toggleWishlist = (productId: string) => {
-    setWishlist((prev) =>
-      prev.includes(productId)
-        ? prev.filter((id) => id !== productId)
-        : [...prev, productId]
-    );
+  const handleUpdateOrderStatus = async (orderId: string, status: Order['status']) => {
+    try {
+      // Map UI status to DB status (confirmed -> processing)
+      const dbStatus = status === 'confirmed' ? 'processing' : status;
+      await orderService.updateOrderStatus(orderId, dbStatus as any);
+      setOrders((prev: Order[]) =>
+        prev.map((order: Order) =>
+          order.id === orderId ? { ...order, status } : order
+        )
+      );
+      // Also update adminOrders if present
+      setAdminOrders((prev: Order[]) =>
+        prev.map((order: Order) =>
+          order.id === orderId ? { ...order, status } : order
+        )
+      );
+    } catch (err: any) {
+      console.error('Failed to update order status:', err);
+      alert(`Failed to update order status: ${err.message || 'Unknown error'}`);
+    }
   };
 
-  const placeOrder = (shippingDetails: any, paymentMethod: string) => {
-    const newOrder: Order = {
-      id: `ORD${Date.now()}`,
-      userId: currentUser?.id || 'guest',
-      items: cart,
-      total: cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
-      status: 'pending',
-      shippingAddress: shippingDetails,
-      paymentMethod,
-      paymentStatus: 'pending',
-      createdAt: new Date().toISOString(),
-      estimatedDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    };
-    
-    setOrders((prev) => [...prev, newOrder]);
-    setCart([]);
-    setCurrentPage('order-tracking');
-    setSelectedOrder(newOrder.id);
+  const handleProductsRefresh = async () => {
+    try {
+      const dbProducts = await productService.getProducts();
+      const adaptedProducts = await adaptDbProducts(dbProducts as any);
+      setProducts(adaptedProducts);
+    } catch (err) {
+      console.error('Failed to refresh products:', err);
+    }
   };
 
   const handleViewProduct = (product: Product) => {
@@ -165,14 +536,14 @@ export default function App() {
             onNavigate={setCurrentPage}
             onCategoryClick={handleCategoryClick}
             onViewProduct={handleViewProduct}
-            products={mockProducts}
+            products={products}
           />
         );
       case 'catalog':
         return (
           <ProductCatalog
             category={selectedCategory}
-            products={mockProducts}
+            products={products}
             onViewProduct={handleViewProduct}
             wishlist={wishlist}
             onToggleWishlist={toggleWishlist}
@@ -223,6 +594,12 @@ export default function App() {
           />
         );
       case 'profile':
+        if (!currentUser) {
+          setAuthMode('login');
+          setShowAuthModal(true);
+          setCurrentPage('home');
+          return null;
+        }
         return (
           <UserProfile
             user={currentUser}
@@ -236,15 +613,10 @@ export default function App() {
       case 'admin':
         return currentUser?.role === 'admin' ? (
           <AdminDashboard
-            products={mockProducts}
-            orders={orders}
-            onUpdateOrderStatus={(orderId, status) => {
-              setOrders((prev) =>
-                prev.map((order) =>
-                  order.id === orderId ? { ...order, status } : order
-                )
-              );
-            }}
+            products={products}
+            orders={currentUser.role === 'admin' ? adminOrders : orders}
+            onUpdateOrderStatus={handleUpdateOrderStatus}
+            onProductsChange={handleProductsRefresh}
           />
         ) : (
           <div className="container mx-auto px-4 py-16 text-center">
@@ -256,11 +628,22 @@ export default function App() {
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header
         currentUser={currentUser}
-        cartItemCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
+        cartItemCount={cart.reduce((sum: number, item: CartItem) => sum + item.quantity, 0)}
         wishlistCount={wishlist.length}
         onNavigate={setCurrentPage}
         onAuthClick={() => {
@@ -272,6 +655,12 @@ export default function App() {
       />
       
       <main className="pt-16">
+        {productsLoading && (
+          <div className="container mx-auto px-4 py-4 text-sm text-gray-500">Loading products...</div>
+        )}
+        {productsError && (
+          <div className="container mx-auto px-4 py-2 text-sm text-red-600">{productsError}</div>
+        )}
         {renderPage()}
       </main>
 
@@ -282,7 +671,7 @@ export default function App() {
           onLogin={handleLogin}
           onRegister={handleRegister}
           onSwitchMode={() =>
-            setAuthMode((prev) => (prev === 'login' ? 'register' : 'login'))
+            setAuthMode((prev: 'login' | 'register') => (prev === 'login' ? 'register' : 'login'))
           }
         />
       )}

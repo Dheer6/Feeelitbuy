@@ -7,6 +7,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { formatINR } from '../lib/currency';
 
 interface CheckoutProps {
   items: CartItem[];
@@ -204,7 +205,7 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
                       <p className="text-sm truncate">{item.product.name}</p>
                       <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
                       <p className="text-sm text-indigo-600">
-                        ${(item.product.price * item.quantity).toFixed(2)}
+                        {formatINR(item.product.price * item.quantity)}
                       </p>
                     </div>
                   </div>
@@ -215,24 +216,24 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
               <div className="space-y-3 mb-6 pt-6 border-t">
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>{formatINR(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Shipping</span>
-                  <span>{shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`}</span>
+                  <span>{shipping === 0 ? 'FREE' : formatINR(shipping)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Tax</span>
-                  <span>${tax.toFixed(2)}</span>
+                  <span>{formatINR(tax)}</span>
                 </div>
                 <div className="border-t pt-3 flex justify-between">
                   <span>Total</span>
-                  <span className="text-indigo-600">${total.toFixed(2)}</span>
+                  <span className="text-indigo-600">{formatINR(total)}</span>
                 </div>
               </div>
 
               <Button type="submit" className="w-full" size="lg">
-                Place Order - ${total.toFixed(2)}
+                Place Order - {formatINR(total)}
               </Button>
 
               <p className="text-xs text-gray-500 mt-4 text-center">

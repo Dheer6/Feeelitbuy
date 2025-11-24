@@ -8,6 +8,7 @@ import {
   DollarSign,
   Settings,
   Bell,
+  Image,
 } from 'lucide-react';
 import { Product, Order } from '../types';
 import { Card } from './ui/card';
@@ -25,14 +26,17 @@ import { AdminProducts } from './admin/AdminProducts';
 import { AdminOrders } from './admin/AdminOrders';
 import { AdminUsers } from './admin/AdminUsers';
 import { AdminAnalytics } from './admin/AdminAnalytics';
+import { AdminBanners } from './admin/AdminBanners';
+import { formatINR } from '../lib/currency';
 
 interface AdminDashboardProps {
   products: Product[];
   orders: Order[];
   onUpdateOrderStatus: (orderId: string, status: Order['status']) => void;
+  onProductsChange?: () => void;
 }
 
-export function AdminDashboard({ products, orders, onUpdateOrderStatus }: AdminDashboardProps) {
+export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProductsChange }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview');
 
   // Calculate stats
@@ -83,6 +87,10 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus }: AdminD
             <Users className="w-4 h-4 mr-2" />
             Users
           </TabsTrigger>
+          <TabsTrigger value="banners">
+            <Image className="w-4 h-4 mr-2" />
+            Banners
+          </TabsTrigger>
           <TabsTrigger value="analytics">
             <TrendingUp className="w-4 h-4 mr-2" />
             Analytics
@@ -101,7 +109,7 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus }: AdminD
                 </div>
               </div>
               <p className="text-green-600 mb-1" style={{ fontSize: '28px' }}>
-                ${totalRevenue.toFixed(2)}
+                {formatINR(totalRevenue)}
               </p>
               <p className="text-sm text-gray-500">+12.5% from last month</p>
             </Card>
@@ -140,7 +148,7 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus }: AdminD
                 </div>
               </div>
               <p className="text-indigo-600 mb-1" style={{ fontSize: '28px' }}>
-                ${totalOrders > 0 ? (totalRevenue / totalOrders).toFixed(2) : '0.00'}
+                {totalOrders > 0 ? formatINR(totalRevenue / totalOrders) : formatINR(0)}
               </p>
               <p className="text-sm text-gray-500">+8.2% from last month</p>
             </Card>
@@ -163,7 +171,7 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus }: AdminD
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <p className="text-sm text-indigo-600">${order.total.toFixed(2)}</p>
+                      <p className="text-sm text-indigo-600">{formatINR(order.total)}</p>
                       <Badge
                         className={
                           order.status === 'delivered'
@@ -213,7 +221,7 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus }: AdminD
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-indigo-600">${product.price.toFixed(2)}</p>
+                      <p className="text-sm text-indigo-600">{formatINR(product.price)}</p>
                       <p className="text-xs text-gray-600">Stock: {product.stock}</p>
                     </div>
                   </div>
@@ -251,7 +259,7 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus }: AdminD
 
         {/* Products Tab */}
         <TabsContent value="products">
-          <AdminProducts products={products} />
+          <AdminProducts products={products} onProductsChange={onProductsChange} />
         </TabsContent>
 
         {/* Orders Tab */}
@@ -262,6 +270,11 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus }: AdminD
         {/* Users Tab */}
         <TabsContent value="users">
           <AdminUsers />
+        </TabsContent>
+
+        {/* Banners Tab */}
+        <TabsContent value="banners">
+          <AdminBanners />
         </TabsContent>
 
         {/* Analytics Tab */}

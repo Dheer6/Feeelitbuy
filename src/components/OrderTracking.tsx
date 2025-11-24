@@ -5,6 +5,7 @@ import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { formatINR } from '../lib/currency';
 
 interface OrderTrackingProps {
   orders: Order[];
@@ -133,7 +134,7 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder }: OrderT
                   <p className="text-gray-600">
                     {new Date(order.createdAt).toLocaleDateString()}
                   </p>
-                  <p className="text-indigo-600">${order.total.toFixed(2)}</p>
+                  <p className="text-indigo-600">{formatINR(order.total)}</p>
                 </div>
                 <div className="mt-3 pt-3 border-t">
                   <p className="text-sm text-gray-600">
@@ -239,7 +240,7 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder }: OrderT
                       <p className="mb-1">{item.product.name}</p>
                       <p className="text-sm text-gray-600 mb-2">Quantity: {item.quantity}</p>
                       <p className="text-indigo-600">
-                        ${(item.product.price * item.quantity).toFixed(2)}
+                        {formatINR(item.product.price * item.quantity)}
                       </p>
                     </div>
                   </div>
@@ -247,7 +248,7 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder }: OrderT
               </div>
               <div className="mt-6 pt-6 border-t flex justify-between">
                 <span>Total</span>
-                <span className="text-indigo-600">${selectedOrder.total.toFixed(2)}</span>
+                <span className="text-indigo-600">{formatINR(selectedOrder.total)}</span>
               </div>
             </Card>
 

@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { X, Mail, Lock, User, Phone } from 'lucide-react';
+import { X, Mail, Lock, User, Phone, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { authService } from '../lib/supabaseService';
 
 interface AuthModalProps {
   mode: 'login' | 'register';
   onClose: () => void;
-  onLogin: (email: string, password: string) => void;
-  onRegister: (name: string, email: string, phone: string, password: string) => void;
+  onLogin: () => void;
+  onRegister: () => void;
   onSwitchMode: () => void;
 }
 
@@ -20,17 +21,37 @@ export function AuthModal({ mode, onClose, onLogin, onRegister, onSwitchMode }: 
     password: '',
     confirmPassword: '',
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (mode === 'login') {
-      onLogin(formData.email, formData.password);
-    } else {
-      if (formData.password !== formData.confirmPassword) {
-        alert('Passwords do not match');
-        return;
+    setError(null);
+    setLoading(true);
+
+    try {
+      if (mode === 'login') {
+        await authService.signIn(formData.email, formData.password);
+        onLogin();
+      } else {
+        if (formData.password !== formData.confirmPassword) {
+          setError('Passwords do not match');
+          setLoading(false);
+          return;
+        }
+        if (formData.password.length < 6) {
+          setError('Password must be at least 6 characters');
+          setLoading(false);
+          return;
+        }
+        
+        await authService.signUp(formData.email, formData.password, formData.name, formData.phone);
+        onRegister();
       }
-      onRegister(formData.name, formData.email, formData.phone, formData.password);
+    } catch (err: any) {
+      console.error('Auth error:', err);
+      setError(err.message || 'An error occurred. Please try again.');
+      setLoading(false);
     }
   };
 
@@ -45,6 +66,12 @@ export function AuthModal({ mode, onClose, onLogin, onRegister, onSwitchMode }: 
         </button>
 
         <h2 className="mb-6">{mode === 'login' ? 'Welcome Back' : 'Create Account'}</h2>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === 'register' && (
@@ -133,8 +160,15 @@ export function AuthModal({ mode, onClose, onLogin, onRegister, onSwitchMode }: 
             </div>
           )}
 
-          <Button type="submit" className="w-full">
-            {mode === 'login' ? 'Sign In' : 'Create Account'}
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {mode === 'login' ? 'Signing In...' : 'Creating Account...'}
+              </>
+            ) : (
+              mode === 'login' ? 'Sign In' : 'Create Account'
+            )}
           </Button>
         </form>
 
@@ -150,9 +184,7 @@ export function AuthModal({ mode, onClose, onLogin, onRegister, onSwitchMode }: 
         {mode === 'login' && (
           <div className="mt-4 text-center">
             <p className="text-sm text-gray-500">
-              Demo: Use any email to login
-              <br />
-              Use "admin@feelitbuy.com" for admin access
+              New here? Create an account to get started
             </p>
           </div>
         )}

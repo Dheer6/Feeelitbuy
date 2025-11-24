@@ -3,6 +3,7 @@ import { CartItem } from '../types';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { formatINR } from '../lib/currency';
 
 interface CartProps {
   items: CartItem[];
@@ -58,7 +59,7 @@ export function Cart({ items, onUpdateQuantity, onRemove, onCheckout, onContinue
                       </h3>
                       <p className="text-indigo-600 text-sm mb-2">{item.product.brand}</p>
                       <p className="text-gray-600 mb-3">
-                        ${item.product.price.toFixed(2)} each
+                        {formatINR(item.product.price)} each
                       </p>
                     </div>
                     <button
@@ -89,7 +90,7 @@ export function Cart({ items, onUpdateQuantity, onRemove, onCheckout, onContinue
                     <div className="text-right">
                       <p className="text-gray-500 text-sm">Subtotal</p>
                       <p className="text-indigo-600">
-                        ${(item.product.price * item.quantity).toFixed(2)}
+                        {formatINR(item.product.price * item.quantity)}
                       </p>
                     </div>
                   </div>
@@ -107,24 +108,24 @@ export function Cart({ items, onUpdateQuantity, onRemove, onCheckout, onContinue
             <div className="space-y-3 mb-6">
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>{formatINR(subtotal)}</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Shipping</span>
-                <span>{shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`}</span>
+                <span>{shipping === 0 ? 'FREE' : formatINR(shipping)}</span>
               </div>
               {subtotal < 500 && shipping > 0 && (
                 <p className="text-sm text-indigo-600">
-                  Add ${(500 - subtotal).toFixed(2)} more for free shipping!
+                  Add {formatINR(500 - subtotal)} more for free shipping!
                 </p>
               )}
               <div className="flex justify-between text-gray-600">
                 <span>Tax (8%)</span>
-                <span>${tax.toFixed(2)}</span>
+                <span>{formatINR(tax)}</span>
               </div>
               <div className="border-t pt-3 flex justify-between">
                 <span>Total</span>
-                <span className="text-indigo-600">${total.toFixed(2)}</span>
+                <span className="text-indigo-600">{formatINR(total)}</span>
               </div>
             </div>
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, Search } from 'lucide-react';
+import { Eye, Search, User as UserIcon } from 'lucide-react';
 import { Order } from '../../types';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
@@ -31,7 +31,11 @@ export function AdminOrders({ orders, onUpdateOrderStatus }: AdminOrdersProps) {
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const filteredOrders = orders.filter((order) => {
-    const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase();
+    const matchesSearch =
+      order.id.toLowerCase().includes(q) ||
+      (order.userName?.toLowerCase().includes(q) || false) ||
+      (order.userEmail?.toLowerCase().includes(q) || false);
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -91,6 +95,7 @@ export function AdminOrders({ orders, onUpdateOrderStatus }: AdminOrdersProps) {
           <TableHeader>
             <TableRow>
               <TableHead>Order ID</TableHead>
+              <TableHead>Customer</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Items</TableHead>
               <TableHead>Total</TableHead>
@@ -103,16 +108,18 @@ export function AdminOrders({ orders, onUpdateOrderStatus }: AdminOrdersProps) {
             {filteredOrders.map((order) => (
               <TableRow key={order.id}>
                 <TableCell>
-                  <p className="text-sm">{order.id}</p>
-                  <p className="text-xs text-gray-500">User: {order.userId}</p>
+                  <p className="text-sm font-mono">{order.id.slice(0,8)}...</p>
+                  <div className="text-xs text-gray-600 flex items-center gap-1">
+                    <UserIcon className="w-3 h-3" />
+                    <span>{order.userName || 'Unknown'}</span>
+                  </div>
+                  {order.userEmail && (
+                    <p className="text-[10px] text-gray-400">{order.userEmail}</p>
+                  )}
                 </TableCell>
                 <TableCell>
-                  <p className="text-sm">
-                    {new Date(order.createdAt).toLocaleDateString()}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {new Date(order.createdAt).toLocaleTimeString()}
-                  </p>
+                  <p className="text-sm">{new Date(order.createdAt).toLocaleDateString()}</p>
+                  <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleTimeString()}</p>
                 </TableCell>
                 <TableCell>
                   <p className="text-sm">

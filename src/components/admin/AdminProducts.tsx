@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Edit, Trash2, Plus, Search } from 'lucide-react';
+import { Edit, Trash2, Plus, Search, Loader2 } from 'lucide-react';
 import { Product } from '../../types';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
@@ -14,14 +14,91 @@ import {
   TableRow,
 } from '../ui/table';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
+import { productService } from '../../lib/supabaseService';
+import { formatINR } from '../../lib/currency';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '../ui/dialog';
+import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
 
 interface AdminProductsProps {
   products: Product[];
+  onProductsChange?: () => void;
 }
 
-export function AdminProducts({ products }: AdminProductsProps) {
+export function AdminProducts({ products, onProductsChange }: AdminProductsProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    price: 0,
+    stock: 0,
+    category: '',
+    brand: '',
+    image_url: '',
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleEdit = (product: Product) => {
+    setEditingProduct(product);
+    setFormData({
+      name: product.name,
+      description: product.description || '',
+      price: product.price,
+      stock: product.stock,
+      category: product.category,
+      brand: product.brand,
+      image_url: product.images[0] || '',
+    });
+    setShowEditDialog(true);
+  };
+
+  const handleSave = async () => {
+    if (!editingProduct) return;
+    
+    try {
+      setSaving(true);
+      await productService.updateProduct(editingProduct.id, {
+        name: formData.name,
+        description: formData.description,
+        price: formData.price,
+        stock: formData.stock,
+        image_url: formData.image_url,
+      } as any);
+      
+      setShowEditDialog(false);
+      if (onProductsChange) onProductsChange();
+    } catch (error) {
+      console.error('Failed to update product:', error);
+      alert('Failed to update product');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (productId: string) => {
+    if (!confirm('Are you sure you want to delete this product?')) return;
+    
+    try {
+      setDeleting(productId);
+      await productService.deleteProduct(productId);
+      if (onProductsChange) onProductsChange();
+    } catch (error) {
+      console.error('Failed to delete product:', error);
+      alert('Failed to delete product');
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
@@ -100,10 +177,10 @@ export function AdminProducts({ products }: AdminProductsProps) {
                 </TableCell>
                 <TableCell>
                   <div>
-                    <p className="text-sm">${product.price.toFixed(2)}</p>
+                    <p className="text-sm">{formatINR(product.price)}</p>
                     {product.originalPrice && (
                       <p className="text-xs text-gray-500 line-through">
-                        ${product.originalPrice.toFixed(2)}
+                        {formatINR(product.originalPrice)}
                       </p>
                     )}
                   </div>
@@ -142,11 +219,25 @@ export function AdminProducts({ products }: AdminProductsProps) {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleEdit(product)}
+                    >
                       <Edit className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                      <Trash2 className="w-4 h-4" />
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => handleDelete(product.id)}
+                      disabled={deleting === product.id}
+                    >
+                      {deleting === product.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
                     </Button>
                   </div>
                 </TableCell>
@@ -161,6 +252,82 @@ export function AdminProducts({ products }: AdminProductsProps) {
           <p className="text-gray-500">No products found</p>
         </div>
       )}
+
+      {/* Edit Product Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="name">Product Name</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Enter product name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Enter product description"
+                rows={4}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="price">Price (INR)</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <Label htmlFor="stock">Stock</Label>
+                <Input
+                  id="stock"
+                  type="number"
+                  value={formData.stock}
+                  onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="image_url">Image URL</Label>
+              <Input
+                id="image_url"
+                value={formData.image_url}
+                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

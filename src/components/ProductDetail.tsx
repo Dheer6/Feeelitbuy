@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { formatINR } from '../lib/currency';
 
 interface ProductDetailProps {
   product: Product;
@@ -91,15 +92,15 @@ export function ProductDetail({
             </div>
             <div className="flex items-baseline gap-3 mb-4">
               <span className="text-indigo-600" style={{ fontSize: '32px' }}>
-                ${product.price.toFixed(2)}
+                {formatINR(product.price)}
               </span>
               {product.originalPrice && (
                 <>
                   <span className="text-gray-400 line-through">
-                    ${product.originalPrice.toFixed(2)}
+                    {formatINR(product.originalPrice)}
                   </span>
                   <span className="bg-red-100 text-red-600 px-2 py-1 rounded-md text-sm">
-                    Save ${(product.originalPrice - product.price).toFixed(2)}
+                    Save {formatINR(product.originalPrice - product.price)}
                   </span>
                 </>
               )}
@@ -172,7 +173,7 @@ export function ProductDetail({
             <Card className="p-4 text-center">
               <Truck className="w-8 h-8 text-indigo-600 mx-auto mb-2" />
               <p className="text-sm">Free Delivery</p>
-              <p className="text-xs text-gray-500">On orders $500+</p>
+              <p className="text-xs text-gray-500">On orders {formatINR(500)}+</p>
             </Card>
             <Card className="p-4 text-center">
               <Shield className="w-8 h-8 text-indigo-600 mx-auto mb-2" />
@@ -217,7 +218,7 @@ export function ProductDetail({
                 <li>Designed for durability and long-lasting performance</li>
                 <li>Easy to use and maintain</li>
                 <li>Backed by manufacturer warranty</li>
-                <li>Free shipping on orders over $500</li>
+                <li>Free shipping on orders over {formatINR(500)}</li>
               </ul>
             </div>
           </Card>

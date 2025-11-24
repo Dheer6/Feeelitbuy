@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Search, UserCheck, UserX, Edit } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, UserCheck, UserX, Edit, Loader2 } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -12,76 +12,63 @@ import {
   TableHeader,
   TableRow,
 } from '../ui/table';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: 'user' | 'admin';
-  status: 'active' | 'blocked';
-  joinDate: string;
-  totalOrders: number;
-  totalSpent: number;
-}
+import { adminService } from '../../lib/supabaseService';
+import type { Profile } from '../../lib/supabaseService';
+import { formatINR } from '../../lib/currency';
 
 export function AdminUsers() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [users, setUsers] = useState<Profile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState<string | null>(null);
 
-  // Mock users data
-  const users: User[] = [
-    {
-      id: '1',
-      name: 'John Doe',
-      email: 'john@example.com',
-      phone: '+1234567890',
-      role: 'user',
-      status: 'active',
-      joinDate: '2024-01-15',
-      totalOrders: 12,
-      totalSpent: 3450.0,
-    },
-    {
-      id: '2',
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      phone: '+1234567891',
-      role: 'user',
-      status: 'active',
-      joinDate: '2024-02-20',
-      totalOrders: 8,
-      totalSpent: 2100.0,
-    },
-    {
-      id: '3',
-      name: 'Admin User',
-      email: 'admin@feelitbuy.com',
-      phone: '+1234567892',
-      role: 'admin',
-      status: 'active',
-      joinDate: '2023-12-01',
-      totalOrders: 0,
-      totalSpent: 0,
-    },
-    {
-      id: '4',
-      name: 'Bob Johnson',
-      email: 'bob@example.com',
-      phone: '+1234567893',
-      role: 'user',
-      status: 'active',
-      joinDate: '2024-03-10',
-      totalOrders: 5,
-      totalSpent: 1250.0,
-    },
-  ];
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  async function loadUsers() {
+    try {
+      setLoading(true);
+      const data = await adminService.getAllUsers();
+      setUsers(data);
+    } catch (error) {
+      console.error('Failed to load users:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleToggleRole(userId: string, currentRole: 'customer' | 'admin') {
+    try {
+      setUpdating(userId);
+      const newRole = currentRole === 'admin' ? 'customer' : 'admin';
+      await adminService.updateUserRole(userId, newRole);
+      // Update local state
+      setUsers(users.map(user => 
+        user.id === userId ? { ...user, role: newRole } : user
+      ));
+    } catch (error) {
+      console.error('Failed to update user role:', error);
+      alert('Failed to update user role');
+    } finally {
+      setUpdating(null);
+    }
+  }
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase());
+      user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -96,6 +83,9 @@ export function AdminUsers() {
             className="pl-10"
           />
         </div>
+        <Button onClick={loadUsers}>
+          Refresh
+        </Button>
       </div>
 
       {/* Stats */}
@@ -107,15 +97,15 @@ export function AdminUsers() {
           </p>
         </Card>
         <Card className="p-6">
-          <p className="text-gray-600 mb-2">Active Users</p>
+          <p className="text-gray-600 mb-2">Customer Users</p>
           <p className="text-green-600" style={{ fontSize: '28px' }}>
-            {users.filter((u) => u.status === 'active').length}
+            {users.filter((u) => u.role === 'customer').length}
           </p>
         </Card>
         <Card className="p-6">
-          <p className="text-gray-600 mb-2">Blocked Users</p>
-          <p className="text-red-600" style={{ fontSize: '28px' }}>
-            {users.filter((u) => u.status === 'blocked').length}
+          <p className="text-gray-600 mb-2">Admin Users</p>
+          <p className="text-purple-600" style={{ fontSize: '28px' }}>
+            {users.filter((u) => u.role === 'admin').length}
           </p>
         </Card>
       </div>
@@ -129,9 +119,6 @@ export function AdminUsers() {
               <TableHead>Contact</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Join Date</TableHead>
-              <TableHead>Orders</TableHead>
-              <TableHead>Total Spent</TableHead>
-              <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -140,14 +127,14 @@ export function AdminUsers() {
               <TableRow key={user.id}>
                 <TableCell>
                   <div>
-                    <p className="text-sm">{user.name}</p>
-                    <p className="text-xs text-gray-500">ID: {user.id}</p>
+                    <p className="text-sm">{user.full_name || 'N/A'}</p>
+                    <p className="text-xs text-gray-500">ID: {user.id.slice(0, 8)}...</p>
                   </div>
                 </TableCell>
                 <TableCell>
                   <div>
-                    <p className="text-sm">{user.email}</p>
-                    <p className="text-xs text-gray-500">{user.phone}</p>
+                    <p className="text-sm">{user.email || 'N/A'}</p>
+                    <p className="text-xs text-gray-500">{user.phone_number || 'N/A'}</p>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -163,48 +150,24 @@ export function AdminUsers() {
                 </TableCell>
                 <TableCell>
                   <p className="text-sm">
-                    {new Date(user.joinDate).toLocaleDateString()}
+                    {new Date(user.created_at).toLocaleDateString()}
                   </p>
-                </TableCell>
-                <TableCell>
-                  <p className="text-sm">{user.totalOrders}</p>
-                </TableCell>
-                <TableCell>
-                  <p className="text-sm text-indigo-600">${user.totalSpent.toFixed(2)}</p>
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    className={
-                      user.status === 'active'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }
-                  >
-                    {user.status}
-                  </Badge>
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="sm">
-                      <Edit className="w-4 h-4" />
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleToggleRole(user.id, user.role)}
+                      disabled={updating === user.id}
+                      className={user.role === 'admin' ? 'text-orange-600 hover:text-orange-700' : 'text-purple-600 hover:text-purple-700'}
+                    >
+                      {updating === user.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>{user.role === 'admin' ? 'Demote to Customer' : 'Promote to Admin'}</>
+                      )}
                     </Button>
-                    {user.status === 'active' ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <UserX className="w-4 h-4" />
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-green-600 hover:text-green-700"
-                      >
-                        <UserCheck className="w-4 h-4" />
-                      </Button>
-                    )}
                   </div>
                 </TableCell>
               </TableRow>

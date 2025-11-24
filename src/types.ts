@@ -31,7 +31,7 @@ export interface User {
   name: string;
   email: string;
   phone: string;
-  role: 'user' | 'admin';
+  role: 'customer' | 'admin';
   createdAt: string;
   address?: Address;
 }
@@ -47,11 +47,14 @@ export interface Address {
 export interface CartItem {
   product: Product;
   quantity: number;
+  itemId?: string; // Supabase cart_items row id when synced
 }
 
 export interface Order {
   id: string;
   userId: string;
+  userName?: string;
+  userEmail?: string;
   items: CartItem[];
   total: number;
   status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';

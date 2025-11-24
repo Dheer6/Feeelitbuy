@@ -8,6 +8,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Checkbox } from './ui/checkbox';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { formatINR } from '../lib/currency';
 
 interface ProductCatalogProps {
   category: string;
@@ -156,8 +157,8 @@ export function ProductCatalog({
                   className="w-full"
                 />
                 <div className="flex justify-between text-sm text-gray-600">
-                  <span>${priceRange[0]}</span>
-                  <span>${priceRange[1]}</span>
+                  <span>{formatINR(priceRange[0])}</span>
+                  <span>{formatINR(priceRange[1])}</span>
                 </div>
               </div>
             </div>
@@ -280,10 +281,10 @@ export function ProductCatalog({
                       </span>
                     </div>
                     <div className="flex items-baseline gap-2 mb-3">
-                      <span className="text-indigo-600">${product.price.toFixed(2)}</span>
+                      <span className="text-indigo-600">{formatINR(product.price)}</span>
                       {product.originalPrice && (
                         <span className="text-gray-400 line-through text-sm">
-                          ${product.originalPrice.toFixed(2)}
+                          {formatINR(product.originalPrice)}
                         </span>
                       )}
                     </div>
