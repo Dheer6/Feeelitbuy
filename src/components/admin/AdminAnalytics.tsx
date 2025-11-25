@@ -58,7 +58,7 @@ export function AdminAnalytics({ orders, products }: AdminAnalyticsProps) {
             </div>
           </div>
           <p className="text-green-600 mb-2" style={{ fontSize: '28px' }}>
-            ${totalRevenue.toFixed(2)}
+            ₹{totalRevenue.toFixed(2)}
           </p>
           <div className="flex items-center gap-1 text-sm text-green-600">
             <TrendingUp className="w-4 h-4" />
@@ -74,7 +74,7 @@ export function AdminAnalytics({ orders, products }: AdminAnalyticsProps) {
             </div>
           </div>
           <p className="text-blue-600 mb-2" style={{ fontSize: '28px' }}>
-            ${avgOrderValue.toFixed(2)}
+            ₹{avgOrderValue.toFixed(2)}
           </p>
           <div className="flex items-center gap-1 text-sm text-blue-600">
             <TrendingUp className="w-4 h-4" />
@@ -126,7 +126,7 @@ export function AdminAnalytics({ orders, products }: AdminAnalyticsProps) {
             <div>
               <div className="flex justify-between mb-2">
                 <span className="text-gray-700">Electronics</span>
-                <span className="text-indigo-600">${electronicsSales.toFixed(2)}</span>
+                <span className="text-indigo-600">₹{electronicsSales.toFixed(2)}</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3">
                 <div
@@ -143,7 +143,7 @@ export function AdminAnalytics({ orders, products }: AdminAnalyticsProps) {
             <div>
               <div className="flex justify-between mb-2">
                 <span className="text-gray-700">Furniture</span>
-                <span className="text-purple-600">${furnitureSales.toFixed(2)}</span>
+                <span className="text-purple-600">₹{furnitureSales.toFixed(2)}</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3">
                 <div
@@ -195,7 +195,7 @@ export function AdminAnalytics({ orders, products }: AdminAnalyticsProps) {
                 <p className="text-sm text-gray-600">{product.brand}</p>
               </div>
               <div className="text-right">
-                <p className="text-indigo-600 mb-1">${product.revenue.toFixed(2)}</p>
+                <p className="text-indigo-600 mb-1">₹{product.revenue.toFixed(2)}</p>
                 <p className="text-sm text-gray-600">{product.itemsSold} sold</p>
               </div>
             </div>

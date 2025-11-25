@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '../ui/dialog';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
@@ -36,17 +37,31 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [deleting, setDeleting] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDialog, setShowDialog] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     price: 0,
     stock: 0,
-    category: '',
+    category: 'electronics',
     brand: '',
     image_url: '',
   });
   const [saving, setSaving] = useState(false);
+
+  const handleAdd = () => {
+    setEditingProduct(null);
+    setFormData({
+      name: '',
+      description: '',
+      price: 0,
+      stock: 0,
+      category: 'electronics',
+      brand: '',
+      image_url: '',
+    });
+    setShowDialog(true);
+  };
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
@@ -59,27 +74,44 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
       brand: product.brand,
       image_url: product.images[0] || '',
     });
-    setShowEditDialog(true);
+    setShowDialog(true);
   };
 
   const handleSave = async () => {
-    if (!editingProduct) return;
+    if (!formData.name || formData.price <= 0) {
+      alert('Please fill in all required fields');
+      return;
+    }
     
     try {
       setSaving(true);
-      await productService.updateProduct(editingProduct.id, {
-        name: formData.name,
-        description: formData.description,
-        price: formData.price,
-        stock: formData.stock,
-        image_url: formData.image_url,
-      } as any);
+      if (editingProduct) {
+        // Update existing product
+        await productService.updateProduct(editingProduct.id, {
+          name: formData.name,
+          description: formData.description,
+          price: formData.price,
+          stock: formData.stock,
+          image_url: formData.image_url,
+        } as any);
+      } else {
+        // Create new product
+        await productService.createProduct({
+          name: formData.name,
+          description: formData.description,
+          price: formData.price,
+          stock: formData.stock,
+          image_url: formData.image_url,
+          category_id: null, // You might need to map category to category_id
+          is_featured: false,
+        } as any);
+      }
       
-      setShowEditDialog(false);
+      setShowDialog(false);
       if (onProductsChange) onProductsChange();
     } catch (error) {
-      console.error('Failed to update product:', error);
-      alert('Failed to update product');
+      console.error('Failed to save product:', error);
+      alert('Failed to save product');
     } finally {
       setSaving(false);
     }
@@ -132,7 +164,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
             <option value="furniture">Furniture</option>
           </select>
         </div>
-        <Button>
+        <Button onClick={handleAdd}>
           <Plus className="w-4 h-4 mr-2" />
           Add Product
         </Button>
@@ -254,14 +286,21 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
       )}
 
       {/* Edit Product Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={showDialog} onOpenChange={setShowDialog} modal={true}>
+        <DialogContent 
+          onEscapeKeyDown={(e) => e.preventDefault()}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+        >
           <DialogHeader>
-            <DialogTitle>Edit Product</DialogTitle>
+            <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
+            <DialogDescription>
+              {editingProduct ? 'Update product details below.' : 'Fill in the details to add a new product.'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="name">Product Name</Label>
+              <Label htmlFor="name">Product Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -281,23 +320,49 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="price">Price (INR)</Label>
+                <Label htmlFor="price">Price (INR) *</Label>
                 <Input
                   id="price"
                   type="number"
                   value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
                   placeholder="0.00"
+                  min="0"
+                  step="0.01"
                 />
               </div>
               <div>
-                <Label htmlFor="stock">Stock</Label>
+                <Label htmlFor="stock">Stock *</Label>
                 <Input
                   id="stock"
                   type="number"
                   value={formData.stock}
-                  onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
                   placeholder="0"
+                  min="0"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="category">Category</Label>
+                <select
+                  id="category"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                >
+                  <option value="electronics">Electronics</option>
+                  <option value="furniture">Furniture</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="brand">Brand</Label>
+                <Input
+                  id="brand"
+                  value={formData.brand}
+                  onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                  placeholder="Brand name"
                 />
               </div>
             </div>
@@ -309,20 +374,34 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
                 onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                 placeholder="https://example.com/image.jpg"
               />
+              {formData.image_url && (
+                <div className="mt-2">
+                  <img 
+                    src={formData.image_url} 
+                    alt="Preview" 
+                    className="w-32 h-32 object-cover rounded-lg"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+            <Button variant="outline" onClick={() => setShowDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button onClick={handleSave} disabled={saving || !formData.name || formData.price <= 0}>
               {saving ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Saving...
                 </>
-              ) : (
+              ) : editingProduct ? (
                 'Save Changes'
+              ) : (
+                'Add Product'
               )}
             </Button>
           </DialogFooter>

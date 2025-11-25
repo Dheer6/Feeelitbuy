@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Package, Truck, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Package, Truck, CheckCircle, Clock, XCircle, Download, RotateCcw, Ban } from 'lucide-react';
 import { Order } from '../types';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
+import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { formatINR } from '../lib/currency';
@@ -11,15 +12,129 @@ interface OrderTrackingProps {
   orders: Order[];
   selectedOrderId: string | null;
   onSelectOrder: (orderId: string) => void;
+  onCancelOrder?: (orderId: string) => void;
+  onReturnOrder?: (orderId: string) => void;
 }
 
-export function OrderTracking({ orders, selectedOrderId, onSelectOrder }: OrderTrackingProps) {
+export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancelOrder, onReturnOrder }: OrderTrackingProps) {
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
   const selectedOrder = orders.find((o) => o.id === selectedOrderId) || orders[0];
 
   const filteredOrders =
     filterStatus === 'all' ? orders : orders.filter((o) => o.status === filterStatus);
+
+  const canCancelOrder = (order: Order) => {
+    return ['pending', 'confirmed'].includes(order.status);
+  };
+
+  const canReturnOrder = (order: Order) => {
+    return order.status === 'delivered';
+  };
+
+  const handleCancelOrder = (orderId: string) => {
+    if (window.confirm('Are you sure you want to cancel this order?')) {
+      onCancelOrder?.(orderId);
+    }
+  };
+
+  const handleReturnOrder = (orderId: string) => {
+    if (window.confirm('Are you sure you want to return this order? A return request will be created.')) {
+      onReturnOrder?.(orderId);
+    }
+  };
+
+  const downloadInvoice = (order: Order) => {
+    // Generate invoice HTML
+    const invoiceHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Invoice - ${order.id}</title>
+        <style>
+          body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #4F46E5; padding-bottom: 20px; }
+          .company-name { font-size: 28px; font-weight: bold; color: #4F46E5; margin-bottom: 5px; }
+          .invoice-title { font-size: 24px; margin-top: 10px; }
+          .details { display: flex; justify-content: space-between; margin-bottom: 30px; }
+          .details-section { flex: 1; }
+          .details-section h3 { font-size: 14px; color: #666; margin-bottom: 10px; }
+          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+          th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+          th { background-color: #f3f4f6; font-weight: bold; }
+          .total-row { font-weight: bold; font-size: 18px; background-color: #f9fafb; }
+          .footer { margin-top: 40px; text-align: center; color: #666; font-size: 12px; border-top: 1px solid #ddd; padding-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="company-name">Feel It Buy</div>
+          <div class="invoice-title">INVOICE</div>
+        </div>
+        
+        <div class="details">
+          <div class="details-section">
+            <h3>Invoice Details</h3>
+            <p><strong>Invoice Number:</strong> INV-${order.id.substring(0, 8).toUpperCase()}</p>
+            <p><strong>Order ID:</strong> ${order.id}</p>
+            <p><strong>Date:</strong> ${new Date(order.createdAt).toLocaleDateString()}</p>
+            <p><strong>Payment Status:</strong> ${order.paymentStatus}</p>
+          </div>
+          
+          <div class="details-section">
+            <h3>Shipping Address</h3>
+            <p>${order.shippingAddress.street}</p>
+            <p>${order.shippingAddress.city}, ${order.shippingAddress.state}</p>
+            <p>${order.shippingAddress.zipCode}</p>
+            <p>${order.shippingAddress.country}</p>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Quantity</th>
+              <th>Price</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${order.items.map(item => `
+              <tr>
+                <td>${item.product.name}</td>
+                <td>${item.quantity}</td>
+                <td>${formatINR(item.product.price)}</td>
+                <td>${formatINR(item.product.price * item.quantity)}</td>
+              </tr>
+            `).join('')}
+            <tr class="total-row">
+              <td colspan="3" style="text-align: right;">TOTAL</td>
+              <td>${formatINR(order.total)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="footer">
+          <p>Thank you for shopping with Feel It Buy!</p>
+          <p>For any queries, please contact us at support@feelitbuy.com</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Create blob and download
+    const blob = new Blob([invoiceHTML], { type: 'text/html' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `invoice-${order.id.substring(0, 8)}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
 
   const getStatusColor = (status: Order['status']) => {
     switch (status) {
@@ -270,6 +385,59 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder }: OrderT
                   {selectedOrder.paymentStatus.charAt(0).toUpperCase() + selectedOrder.paymentStatus.slice(1)}
                 </Badge>
               </div>
+            </Card>
+
+            {/* Order Actions */}
+            <Card className="p-6">
+              <h3 className="mb-4">Order Actions</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => downloadInvoice(selectedOrder)}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Invoice
+                </Button>
+                
+                {canReturnOrder(selectedOrder) && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => handleReturnOrder(selectedOrder.id)}
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Return Order
+                  </Button>
+                )}
+                
+                {canCancelOrder(selectedOrder) && (
+                  <Button
+                    variant="destructive"
+                    className="w-full"
+                    onClick={() => handleCancelOrder(selectedOrder.id)}
+                  >
+                    <Ban className="w-4 h-4 mr-2" />
+                    Cancel Order
+                  </Button>
+                )}
+              </div>
+
+              {selectedOrder.status === 'cancelled' && (
+                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-800">
+                    This order has been cancelled. If you were charged, your refund will be processed within 5-7 business days.
+                  </p>
+                </div>
+              )}
+
+              {selectedOrder.status === 'delivered' && (
+                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-800">
+                    Your order has been delivered. You can return this order within 7 days of delivery.
+                  </p>
+                </div>
+              )}
             </Card>
           </div>
         )}

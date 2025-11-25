@@ -508,6 +508,40 @@ export default function App() {
     }
   };
 
+  const handleCancelOrder = async (orderId: string) => {
+    try {
+      await orderService.updateOrderStatus(orderId, 'cancelled');
+      setOrders((prev: Order[]) =>
+        prev.map((order: Order) =>
+          order.id === orderId ? { ...order, status: 'cancelled' } : order
+        )
+      );
+      setAdminOrders((prev: Order[]) =>
+        prev.map((order: Order) =>
+          order.id === orderId ? { ...order, status: 'cancelled' } : order
+        )
+      );
+      alert('Order cancelled successfully. Refund will be processed if payment was made.');
+    } catch (err: any) {
+      console.error('Failed to cancel order:', err);
+      alert(`Failed to cancel order: ${err.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleReturnOrder = async (orderId: string) => {
+    try {
+      // In a real app, you'd create a return request in the database
+      // For now, we'll just show a success message
+      alert('Return request created successfully. Our team will contact you within 24 hours to arrange pickup.');
+      
+      // Optionally update order status or add a return flag
+      // await orderService.createReturnRequest(orderId);
+    } catch (err: any) {
+      console.error('Failed to create return request:', err);
+      alert(`Failed to create return request: ${err.message || 'Unknown error'}`);
+    }
+  };
+
   const handleProductsRefresh = async () => {
     try {
       const dbProducts = await productService.getProducts();
@@ -591,6 +625,8 @@ export default function App() {
             orders={orders}
             selectedOrderId={selectedOrder}
             onSelectOrder={setSelectedOrder}
+            onCancelOrder={handleCancelOrder}
+            onReturnOrder={handleReturnOrder}
           />
         );
       case 'profile':

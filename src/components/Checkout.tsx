@@ -9,6 +9,15 @@ import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { formatINR } from '../lib/currency';
 
+// Razorpay types
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
+const RAZORPAY_KEY = 'rzp_live_Bzuaj1lGfUylYf';
+
 interface CheckoutProps {
   items: CartItem[];
   onPlaceOrder: (shippingDetails: Address, paymentMethod: string) => void;
@@ -25,6 +34,7 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
     country: user?.address?.country || 'USA',
   });
   const [paymentMethod, setPaymentMethod] = useState('card');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const shipping = subtotal > 500 ? 0 : 25;
@@ -33,7 +43,66 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onPlaceOrder(shippingDetails, paymentMethod);
+    initiateRazorpayPayment();
+  };
+
+  const initiateRazorpayPayment = () => {
+    // Validate shipping details
+    if (!shippingDetails.street || !shippingDetails.city || !shippingDetails.state || !shippingDetails.zipCode) {
+      alert('Please fill in all shipping details');
+      return;
+    }
+
+    if (!window.Razorpay) {
+      alert('Razorpay is not loaded. Please refresh the page and try again.');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    const options = {
+      key: RAZORPAY_KEY,
+      amount: Math.round(total * 100), // Amount in paise (multiply by 100)
+      currency: 'INR',
+      name: 'Feel It Buy',
+      description: `Order for ${items.length} item(s)`,
+      image: 'https://your-logo-url.com/logo.png', // Optional: Add your logo URL
+      handler: function (response: any) {
+        // Payment successful
+        console.log('Payment successful:', response);
+        setIsProcessing(false);
+        // Now place the order with payment ID
+        onPlaceOrder(shippingDetails, `razorpay_${response.razorpay_payment_id}`);
+      },
+      prefill: {
+        name: user?.name || '',
+        email: user?.email || '',
+        contact: user?.phone || ''
+      },
+      notes: {
+        address: `${shippingDetails.street}, ${shippingDetails.city}, ${shippingDetails.state} ${shippingDetails.zipCode}`,
+        items: items.map(item => `${item.product.name} x${item.quantity}`).join(', ')
+      },
+      theme: {
+        color: '#4F46E5' // Indigo color matching your theme
+      },
+      modal: {
+        ondismiss: function() {
+          console.log('Payment cancelled by user');
+          setIsProcessing(false);
+        }
+      }
+    };
+
+    const razorpay = new window.Razorpay(options);
+    
+    razorpay.on('payment.failed', function (response: any) {
+      console.error('Payment failed:', response.error);
+      setIsProcessing(false);
+      alert(`Payment failed: ${response.error.description}`);
+    });
+    
+    razorpay.open();
   };
 
   return (
@@ -232,8 +301,8 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full" size="lg">
-                Place Order - {formatINR(total)}
+              <Button type="submit" className="w-full" size="lg" disabled={isProcessing}>
+                {isProcessing ? 'Processing...' : `Pay ${formatINR(total)}`}
               </Button>
 
               <p className="text-xs text-gray-500 mt-4 text-center">
