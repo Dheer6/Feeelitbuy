@@ -46,6 +46,8 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
     category: 'electronics',
     brand: '',
     image_url: '',
+    discountType: 'none' as 'none' | 'percentage' | 'amount',
+    discountValue: 0,
   });
   const [saving, setSaving] = useState(false);
 
@@ -59,12 +61,27 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
       category: 'electronics',
       brand: '',
       image_url: '',
+      discountType: 'none',
+      discountValue: 0,
     });
     setShowDialog(true);
   };
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
+    
+    // Determine discount type and value from existing product
+    let discountType: 'none' | 'percentage' | 'amount' = 'none';
+    let discountValue = 0;
+    
+    if (product.discount && product.discount > 0) {
+      discountType = 'percentage';
+      discountValue = product.discount;
+    } else if (product.originalPrice && product.originalPrice > product.price) {
+      discountType = 'amount';
+      discountValue = product.originalPrice - product.price;
+    }
+    
     setFormData({
       name: product.name,
       description: product.description || '',
@@ -73,6 +90,8 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
       category: product.category,
       brand: product.brand,
       image_url: product.images[0] || '',
+      discountType,
+      discountValue,
     });
     setShowDialog(true);
   };
@@ -81,6 +100,20 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
     if (!formData.name || formData.price <= 0) {
       alert('Please fill in all required fields');
       return;
+    }
+    
+    // Calculate discount and original price based on discount type
+    let discount = 0;
+    let originalPrice = formData.price;
+    
+    if (formData.discountType === 'percentage' && formData.discountValue > 0) {
+      discount = formData.discountValue;
+      // Original price is calculated from current price + discount
+      originalPrice = formData.price / (1 - discount / 100);
+    } else if (formData.discountType === 'amount' && formData.discountValue > 0) {
+      originalPrice = formData.price + formData.discountValue;
+      // Calculate percentage for display
+      discount = (formData.discountValue / originalPrice) * 100;
     }
     
     try {
@@ -93,6 +126,8 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
           price: formData.price,
           stock: formData.stock,
           image_url: formData.image_url,
+          discount: discount > 0 ? discount : undefined,
+          original_price: discount > 0 ? originalPrice : undefined,
         } as any);
       } else {
         // Create new product
@@ -104,6 +139,8 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
           image_url: formData.image_url,
           category_id: null, // You might need to map category to category_id
           is_featured: false,
+          discount: discount > 0 ? discount : undefined,
+          original_price: discount > 0 ? originalPrice : undefined,
         } as any);
       }
       
@@ -189,7 +226,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
               <TableRow key={product.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                       <ImageWithFallback
                         src={product.images[0]}
                         alt={product.name}
@@ -330,6 +367,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
                   min="0"
                   step="0.01"
                 />
+                <p className="text-xs text-gray-500 mt-1">Final price after discount</p>
               </div>
               <div>
                 <Label htmlFor="stock">Stock *</Label>
@@ -342,6 +380,53 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
                   min="0"
                 />
               </div>
+            </div>
+            <div className="space-y-3">
+              <Label>Discount (Optional)</Label>
+              <div className="flex gap-3">
+                <select
+                  value={formData.discountType}
+                  onChange={(e) => setFormData({ ...formData, discountType: e.target.value as any, discountValue: 0 })}
+                  className="px-3 py-2 border border-gray-300 rounded-lg"
+                >
+                  <option value="none">No Discount</option>
+                  <option value="percentage">Percentage (%)</option>
+                  <option value="amount">Fixed Amount (₹)</option>
+                </select>
+                {formData.discountType !== 'none' && (
+                  <div className="flex-1">
+                    <Input
+                      type="number"
+                      value={formData.discountValue}
+                      onChange={(e) => setFormData({ ...formData, discountValue: parseFloat(e.target.value) || 0 })}
+                      placeholder={formData.discountType === 'percentage' ? 'e.g., 20' : 'e.g., 500'}
+                      min="0"
+                      max={formData.discountType === 'percentage' ? '100' : undefined}
+                      step={formData.discountType === 'percentage' ? '1' : '0.01'}
+                    />
+                  </div>
+                )}
+              </div>
+              {formData.discountType !== 'none' && formData.discountValue > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-900">
+                    <span className="font-semibold">Original Price: </span>
+                    {formData.discountType === 'percentage'
+                      ? formatINR(formData.price / (1 - formData.discountValue / 100))
+                      : formatINR(formData.price + formData.discountValue)}
+                  </p>
+                  <p className="text-sm text-blue-900">
+                    <span className="font-semibold">Discounted Price: </span>
+                    {formatINR(formData.price)}
+                  </p>
+                  <p className="text-sm text-blue-900">
+                    <span className="font-semibold">You Save: </span>
+                    {formData.discountType === 'percentage'
+                      ? `${formData.discountValue}% (${formatINR(formData.price * formData.discountValue / (100 - formData.discountValue))})`
+                      : `${formatINR(formData.discountValue)} (${((formData.discountValue / (formData.price + formData.discountValue)) * 100).toFixed(1)}%)`}
+                  </p>
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>

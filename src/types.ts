@@ -4,6 +4,7 @@ export interface Product {
   description: string;
   price: number;
   originalPrice?: number;
+  discount?: number; // Discount percentage (0-100)
   category: 'electronics' | 'furniture';
   subcategory: string;
   brand: string;
