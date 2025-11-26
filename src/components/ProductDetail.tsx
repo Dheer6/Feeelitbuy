@@ -42,22 +42,21 @@ export function ProductDetail({
         <div>
           <div className="mb-4 rounded-lg overflow-hidden bg-gray-100">
             <ImageWithFallback
-              src={product.images[selectedImage]}
+              src={product.images?.[selectedImage] || ''}
               alt={product.name}
               className="w-full aspect-square object-cover"
             />
           </div>
           <div className="grid grid-cols-4 gap-2">
-            {product.images.map((image, index) => (
+            {product.images?.map((image, index) => (
               <button
                 key={index}
                 onClick={() => setSelectedImage(index)}
-                className={`rounded-lg overflow-hidden border-2 transition-colors ${
-                  selectedImage === index ? 'border-indigo-600' : 'border-gray-200'
-                }`}
+                className={`rounded-lg overflow-hidden border-2 transition-colors ${selectedImage === index ? 'border-indigo-600' : 'border-gray-200'
+                  }`}
               >
                 <ImageWithFallback
-                  src={image}
+                  src={image || ''}
                   alt={`${product.name} ${index + 1}`}
                   className="w-full aspect-square object-cover"
                 />
@@ -77,11 +76,10 @@ export function ProductDetail({
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
-                      className={`w-5 h-5 ${
-                        i < Math.floor(product.rating)
+                      className={`w-5 h-5 ${i < Math.floor(product.rating)
                           ? 'fill-yellow-400 text-yellow-400'
                           : 'fill-gray-300 text-gray-300'
-                      }`}
+                        }`}
                     />
                   ))}
                 </div>
@@ -161,9 +159,8 @@ export function ProductDetail({
               onClick={() => onToggleWishlist(product.id)}
             >
               <Heart
-                className={`w-5 h-5 ${
-                  isWishlisted ? 'fill-red-500 text-red-500' : ''
-                }`}
+                className={`w-5 h-5 ${isWishlisted ? 'fill-red-500 text-red-500' : ''
+                  }`}
               />
             </Button>
           </div>
@@ -234,11 +231,10 @@ export function ProductDetail({
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
-                      className={`w-5 h-5 ${
-                        i < Math.floor(product.rating)
+                      className={`w-5 h-5 ${i < Math.floor(product.rating)
                           ? 'fill-yellow-400 text-yellow-400'
                           : 'fill-gray-300 text-gray-300'
-                      }`}
+                        }`}
                     />
                   ))}
                 </div>

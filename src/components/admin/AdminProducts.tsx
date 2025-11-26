@@ -70,11 +70,11 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
-    
+
     // Determine discount type and value from existing product
     let discountType: 'none' | 'percentage' | 'amount' = 'none';
     let discountValue = 0;
-    
+
     if (product.discount && product.discount > 0) {
       discountType = 'percentage';
       discountValue = product.discount;
@@ -82,7 +82,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
       discountType = 'amount';
       discountValue = product.originalPrice - product.price;
     }
-    
+
     setFormData({
       name: product.name,
       description: product.description || '',
@@ -102,11 +102,11 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
       alert('Please fill in all required fields');
       return;
     }
-    
+
     // Calculate discount and original price based on discount type
     let discount = 0;
     let originalPrice = formData.price;
-    
+
     if (formData.discountType === 'percentage' && formData.discountValue > 0) {
       discount = formData.discountValue;
       // Original price is calculated from current price + discount
@@ -116,11 +116,11 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
       // Calculate percentage for display
       discount = (formData.discountValue / originalPrice) * 100;
     }
-    
+
     try {
       setSaving(true);
       let productId: string;
-      
+
       if (editingProduct) {
         // Update existing product
         await productService.updateProduct(editingProduct.id, {
@@ -132,7 +132,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
           original_price: discount > 0 ? originalPrice : undefined,
         } as any);
         productId = editingProduct.id;
-        
+
         // Delete all existing images for this product
         const existingImages = await productImageService.getProductImages(productId);
         for (const img of existingImages) {
@@ -152,7 +152,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
         } as any);
         productId = newProduct.id;
       }
-      
+
       // Save images to product_images table
       const validImageUrls = formData.image_urls.filter(url => url.trim() !== '');
       for (let i = 0; i < validImageUrls.length; i++) {
@@ -164,7 +164,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
           alt_text: `${formData.name} - Image ${i + 1}`,
         });
       }
-      
+
       setShowDialog(false);
       if (onProductsChange) onProductsChange();
     } catch (error) {
@@ -177,16 +177,16 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
 
   const handleDelete = async (productId: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
-    
+
     try {
       setDeleting(productId);
-      
+
       // Delete all images associated with this product
       const images = await productImageService.getProductImages(productId);
       for (const img of images) {
         await productImageService.deleteProductImage(img.id);
       }
-      
+
       // Delete the product
       await productService.deleteProduct(productId);
       if (onProductsChange) onProductsChange();
@@ -257,7 +257,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                       <ImageWithFallback
-                        src={product.images[0]}
+                        src={product.images?.[0] || ''}
                         alt={product.name}
                         className="w-full h-full object-cover"
                       />
@@ -289,8 +289,8 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
                       product.stock === 0
                         ? 'bg-red-100 text-red-800'
                         : product.stock < 10
-                        ? 'bg-orange-100 text-orange-800'
-                        : 'bg-green-100 text-green-800'
+                          ? 'bg-orange-100 text-orange-800'
+                          : 'bg-green-100 text-green-800'
                     }
                   >
                     {product.stock} units
@@ -317,16 +317,16 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       size="sm"
                       onClick={() => handleEdit(product)}
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="text-red-600 hover:text-red-700"
                       onClick={() => handleDelete(product.id)}
                       disabled={deleting === product.id}
@@ -353,7 +353,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
 
       {/* Edit Product Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog} modal={true}>
-        <DialogContent 
+        <DialogContent
           onEscapeKeyDown={(e) => e.preventDefault()}
           onPointerDownOutside={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
@@ -529,9 +529,9 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
                     .filter(url => url.trim() !== '')
                     .map((url, index) => (
                       <div key={index} className="relative">
-                        <img 
-                          src={url} 
-                          alt={`Preview ${index + 1}`} 
+                        <img
+                          src={url}
+                          alt={`Preview ${index + 1}`}
                           className="w-full h-20 object-cover rounded-lg border"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';

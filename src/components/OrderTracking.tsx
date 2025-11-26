@@ -356,11 +356,11 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancel
             <div class="invoice-title">INVOICE</div>
             <p><strong>Invoice #:</strong> INV-${order.id.substring(0, 8).toUpperCase()}</p>
             <p><strong>Order ID:</strong> ${order.id.substring(0, 12)}</p>
-            <p><strong>Date:</strong> ${new Date(order.createdAt).toLocaleDateString('en-IN', { 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}</p>
+            <p><strong>Date:</strong> ${new Date(order.createdAt).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })}</p>
             <div class="payment-status ${order.paymentStatus === 'paid' ? 'paid' : 'pending'}">
               ${order.paymentStatus.toUpperCase()}
             </div>
@@ -583,9 +583,8 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancel
             filteredOrders.map((order) => (
               <Card
                 key={order.id}
-                className={`p-4 cursor-pointer transition-all hover:shadow-md ${
-                  selectedOrder?.id === order.id ? 'ring-2 ring-indigo-600' : ''
-                }`}
+                className={`p-4 cursor-pointer transition-all hover:shadow-md ${selectedOrder?.id === order.id ? 'ring-2 ring-indigo-600' : ''
+                  }`}
                 onClick={() => onSelectOrder(order.id)}
               >
                 <div className="flex justify-between items-start mb-3">
@@ -637,11 +636,10 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancel
                     <div key={index} className="flex gap-4 pb-8 last:pb-0">
                       <div className="flex flex-col items-center">
                         <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                            step.completed
+                          className={`w-10 h-10 rounded-full flex items-center justify-center ${step.completed
                               ? 'bg-indigo-600 text-white'
                               : 'bg-gray-200 text-gray-400'
-                          }`}
+                            }`}
                         >
                           {step.completed ? (
                             <CheckCircle className="w-6 h-6" />
@@ -651,9 +649,8 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancel
                         </div>
                         {index < getTrackingSteps(selectedOrder).length - 1 && (
                           <div
-                            className={`w-0.5 h-16 ${
-                              step.completed ? 'bg-indigo-600' : 'bg-gray-200'
-                            }`}
+                            className={`w-0.5 h-16 ${step.completed ? 'bg-indigo-600' : 'bg-gray-200'
+                              }`}
                           ></div>
                         )}
                       </div>
@@ -698,7 +695,7 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancel
                   <div key={item.product.id} className="flex gap-4 pb-4 border-b last:border-b-0">
                     <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                       <ImageWithFallback
-                        src={item.product.images[0]}
+                        src={item.product.images?.[0] || ''}
                         alt={item.product.name}
                         className="w-full h-full object-cover"
                       />
@@ -751,7 +748,7 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancel
                   <Download className="w-4 h-4 mr-2" />
                   Download Invoice
                 </Button>
-                
+
                 {canReturnOrder(selectedOrder) && (
                   <Button
                     variant="outline"
@@ -762,7 +759,7 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancel
                     Return Order
                   </Button>
                 )}
-                
+
                 {canCancelOrder(selectedOrder) && (
                   <Button
                     variant="destructive"

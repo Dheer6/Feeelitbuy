@@ -11,12 +11,13 @@ interface CartProps {
   onRemove: (productId: string) => void;
   onCheckout: () => void;
   onContinueShopping: () => void;
+  onViewProduct: (product: any) => void;
 }
 
-export function Cart({ items, onUpdateQuantity, onRemove, onCheckout, onContinueShopping }: CartProps) {
+export function Cart({ items, onUpdateQuantity, onRemove, onCheckout, onContinueShopping, onViewProduct }: CartProps) {
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const shipping = subtotal > 500 ? 0 : 25;
-  const tax = subtotal * 0.08;
+  const tax = subtotal * 0.18;
   const total = subtotal + shipping + tax;
 
   if (items.length === 0) {
@@ -44,9 +45,12 @@ export function Cart({ items, onUpdateQuantity, onRemove, onCheckout, onContinue
           {items.map((item) => (
             <Card key={item.product.id} className="p-4">
               <div className="flex gap-4">
-                <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                <div
+                  className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => onViewProduct(item.product)}
+                >
                   <ImageWithFallback
-                    src={item.product.images[0]}
+                    src={item.product.images?.[0] || ''}
                     alt={item.product.name}
                     className="w-full h-full object-cover"
                   />
@@ -104,7 +108,7 @@ export function Cart({ items, onUpdateQuantity, onRemove, onCheckout, onContinue
         <div>
           <Card className="p-6 sticky top-20">
             <h3 className="mb-6">Order Summary</h3>
-            
+
             <div className="space-y-3 mb-6">
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal</span>
@@ -120,7 +124,7 @@ export function Cart({ items, onUpdateQuantity, onRemove, onCheckout, onContinue
                 </p>
               )}
               <div className="flex justify-between text-gray-600">
-                <span>Tax (8%)</span>
+                <span>Tax (18%)</span>
                 <span>{formatINR(tax)}</span>
               </div>
               <div className="border-t pt-3 flex justify-between">

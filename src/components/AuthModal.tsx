@@ -44,7 +44,13 @@ export function AuthModal({ mode, onClose, onLogin, onRegister, onSwitchMode }: 
           setLoading(false);
           return;
         }
-        
+
+        if (formData.phone.length < 10 || !/^\d+$/.test(formData.phone)) {
+          setError('Please enter a valid 10-digit phone number');
+          setLoading(false);
+          return;
+        }
+
         await authService.signUp(formData.email, formData.password, formData.name, formData.phone);
         onRegister();
       }

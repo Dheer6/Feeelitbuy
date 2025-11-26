@@ -38,12 +38,12 @@ export function Header({
             onClick={() => onNavigate('home')}
           >
             <img src="/fib-logo.png" alt="Feel It Buy Logo" className="h-10 w-auto" />
-            <div className="flex flex-col">
+            {/* <div className="flex flex-col">
               <span className="text-indigo-600">Feel It Buy</span>
               <span className="text-gray-500" style={{ fontSize: '10px', marginTop: '-4px' }}>
                 Feel the Quality, Buy with Confidence
               </span>
-            </div>
+            </div> */}
           </div>
 
           {/* Navigation */}

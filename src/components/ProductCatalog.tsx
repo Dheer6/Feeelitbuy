@@ -33,12 +33,12 @@ export function ProductCatalog({
   const [selectedRating, setSelectedRating] = useState<number>(0);
   const [inStock, setInStock] = useState(false);
   const [onSale, setOnSale] = useState(false);
-  
+
   // Electronics-specific filters
   const [selectedScreenSizes, setSelectedScreenSizes] = useState<string[]>([]);
   const [selectedStorage, setSelectedStorage] = useState<string[]>([]);
   const [selectedProcessors, setSelectedProcessors] = useState<string[]>([]);
-  
+
   // Furniture-specific filters
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
@@ -123,7 +123,7 @@ export function ProductCatalog({
   const screenSizes = ['13"', '15"', '24"', '32"', '43"', '55"', '65"'];
   const storageOptions = ['128GB', '256GB', '512GB', '1TB', '2TB'];
   const processors = ['Intel i3', 'Intel i5', 'Intel i7', 'AMD Ryzen 5', 'AMD Ryzen 7'];
-  
+
   // Furniture filter options
   const materials = ['Wood', 'Metal', 'Fabric', 'Leather', 'Glass', 'Plastic'];
   const colors = ['Black', 'White', 'Brown', 'Gray', 'Beige', 'Blue', 'Red'];
@@ -152,8 +152,8 @@ export function ProductCatalog({
           {category === 'all'
             ? 'All Products'
             : category === 'electronics'
-            ? 'Electronics'
-            : 'Furniture'}
+              ? 'Electronics'
+              : 'Furniture'}
         </h1>
         <p className="text-gray-600">
           Showing {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''}
@@ -272,11 +272,10 @@ export function ProductCatalog({
                         {[...Array(5)].map((_, i) => (
                           <Star
                             key={i}
-                            className={`w-4 h-4 ${
-                              i < rating
+                            className={`w-4 h-4 ${i < rating
                                 ? 'fill-yellow-400 text-yellow-400'
                                 : 'fill-gray-300 text-gray-300'
-                            }`}
+                              }`}
                           />
                         ))}
                         <span className="ml-1">& Up</span>
@@ -518,7 +517,7 @@ export function ProductCatalog({
                     onClick={() => onViewProduct(product)}
                   >
                     <ImageWithFallback
-                      src={product.images[0]}
+                      src={product.images?.[0] || ''}
                       alt={product.name}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                     />
@@ -538,11 +537,10 @@ export function ProductCatalog({
                       className="absolute top-3 right-3 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-100 transition-colors"
                     >
                       <Heart
-                        className={`w-5 h-5 ${
-                          wishlist.includes(product.id)
+                        className={`w-5 h-5 ${wishlist.includes(product.id)
                             ? 'fill-red-500 text-red-500'
                             : 'text-gray-600'
-                        }`}
+                          }`}
                       />
                     </button>
                     {product.stock < 10 && (
@@ -561,11 +559,10 @@ export function ProductCatalog({
                         {[...Array(5)].map((_, i) => (
                           <Star
                             key={i}
-                            className={`w-4 h-4 ${
-                              i < Math.floor(product.rating)
+                            className={`w-4 h-4 ${i < Math.floor(product.rating)
                                 ? 'fill-yellow-400 text-yellow-400'
                                 : 'fill-gray-300 text-gray-300'
-                            }`}
+                              }`}
                           />
                         ))}
                       </div>

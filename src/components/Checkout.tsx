@@ -31,7 +31,7 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
     city: user?.address?.city || '',
     state: user?.address?.state || '',
     zipCode: user?.address?.zipCode || '',
-    country: user?.address?.country || 'USA',
+    country: user?.address?.country || 'India',
   });
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -87,7 +87,7 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
         color: '#4F46E5' // Indigo color matching your theme
       },
       modal: {
-        ondismiss: function() {
+        ondismiss: function () {
           console.log('Payment cancelled by user');
           setIsProcessing(false);
         }
@@ -95,13 +95,13 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
     };
 
     const razorpay = new window.Razorpay(options);
-    
+
     razorpay.on('payment.failed', function (response: any) {
       console.error('Payment failed:', response.error);
       setIsProcessing(false);
       alert(`Payment failed: ${response.error.description}`);
     });
-    
+
     razorpay.open();
   };
 
@@ -265,7 +265,7 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
                   <div key={item.product.id} className="flex gap-3">
                     <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                       <ImageWithFallback
-                        src={item.product.images[0]}
+                        src={item.product.images?.[0] || ''}
                         alt={item.product.name}
                         className="w-full h-full object-cover"
                       />

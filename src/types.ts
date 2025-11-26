@@ -38,6 +38,7 @@ export interface User {
 }
 
 export interface Address {
+  name?: string;
   street: string;
   city: string;
   state: string;
@@ -61,7 +62,7 @@ export interface Order {
   status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   shippingAddress: Address;
   paymentMethod: string;
-  paymentStatus: 'pending' | 'completed' | 'failed' | 'refunded';
+  paymentStatus: 'pending' | 'completed' | 'paid' | 'failed' | 'refunded';
   createdAt: string;
   updatedAt?: string;
   estimatedDelivery: string;

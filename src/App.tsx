@@ -45,7 +45,7 @@ export default function App() {
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.email);
-      
+
       if (event === 'SIGNED_IN' && session?.user) {
         // Immediate fallback so UI updates without waiting for profile row
         const u = session.user;
@@ -95,7 +95,7 @@ export default function App() {
   const checkUser = async () => {
     try {
       const user = await authService.getCurrentUser();
-      
+
       if (user) {
         let profileLoaded = false;
         try {
@@ -470,11 +470,11 @@ export default function App() {
       };
 
       const createdOrder = await orderService.createOrder(orderData);
-      
+
       // Fetch full order details
       const fullOrder = await orderService.getOrder(createdOrder.id);
       const adaptedOrder = adaptDbOrders([fullOrder as any])[0];
-      
+
       setOrders((prev: Order[]) => [adaptedOrder, ...prev]);
       setCart([]);
       setCartHydrated(false); // trigger re-hydration (cart cleared on server)
@@ -533,7 +533,7 @@ export default function App() {
       // In a real app, you'd create a return request in the database
       // For now, we'll just show a success message
       alert('Return request created successfully. Our team will contact you within 24 hours to arrange pickup.');
-      
+
       // Optionally update order status or add a return flag
       // await orderService.createReturnRequest(orderId);
     } catch (err: any) {
@@ -608,6 +608,7 @@ export default function App() {
               }
             }}
             onContinueShopping={() => setCurrentPage('catalog')}
+            onViewProduct={handleViewProduct}
           />
         );
       case 'checkout':
@@ -689,7 +690,7 @@ export default function App() {
         onLogout={handleLogout}
         currentPage={currentPage}
       />
-      
+
       <main className="pt-16">
         {productsLoading && (
           <div className="container mx-auto px-4 py-4 text-sm text-gray-500">Loading products...</div>

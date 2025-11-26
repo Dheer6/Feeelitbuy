@@ -12,6 +12,12 @@ interface DbProductRow {
   category_id?: string;
   // categories relationship when selected: categories?: { id: string; name: string };
   categories?: { id: string; name: string } | null;
+  product_images?: {
+    id: string;
+    image_url: string;
+    is_primary: boolean;
+    display_order: number;
+  }[];
 }
 
 // Basic placeholder image if none exists
@@ -28,12 +34,28 @@ function mapCategory(db: string | undefined | null): 'electronics' | 'furniture'
 
 export async function adaptDbProduct(db: DbProductRow): Promise<Product> {
   let images: string[] = [];
-  try {
-    const imgRows = await productImageService.getProductImages(db.id);
-    images = imgRows.map(r => r.image_url).filter(Boolean);
-  } catch (_) {
-    // ignore
+
+  if (db.product_images && db.product_images.length > 0) {
+    // Use pre-fetched images
+    images = db.product_images
+      .sort((a, b) => {
+        // Primary first
+        if (a.is_primary && !b.is_primary) return -1;
+        if (!a.is_primary && b.is_primary) return 1;
+        // Then by display order
+        return (a.display_order || 0) - (b.display_order || 0);
+      })
+      .map(img => img.image_url)
+      .filter(Boolean);
+  } else {
+    try {
+      const imgRows = await productImageService.getProductImages(db.id);
+      images = imgRows.map(r => r.image_url).filter(Boolean);
+    } catch (_) {
+      // ignore
+    }
   }
+
   if (images.length === 0) images = [PLACEHOLDER_IMAGE];
 
   const price = db.price;

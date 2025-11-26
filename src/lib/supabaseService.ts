@@ -1,10 +1,10 @@
 import { supabase } from './supabase';
-import type { 
-  Profile, 
-  Product, 
-  Category, 
-  CartItem, 
-  Order, 
+import type {
+  Profile,
+  Product,
+  Category,
+  CartItem,
+  Order,
   OrderItem,
   Address,
   Review,
@@ -27,9 +27,9 @@ export const authService = {
         },
       },
     });
-    
+
     if (error) throw error;
-    
+
     // Profile will be automatically created by database trigger
     return data;
   },
@@ -40,7 +40,7 @@ export const authService = {
       email,
       password,
     });
-    
+
     if (error) throw error;
     return data;
   },
@@ -93,8 +93,8 @@ export const authService = {
 
 export const productService = {
   // Get all products
-  async getProducts(filters?: { 
-    category?: string; 
+  async getProducts(filters?: {
+    category?: string;
     featured?: boolean;
     search?: string;
     minPrice?: number;
@@ -102,7 +102,7 @@ export const productService = {
   }) {
     let query = supabase
       .from('products')
-      .select('*, categories(*)');
+      .select('*, categories(*), product_images(*)');
 
     if (filters?.category) {
       query = query.eq('category_id', filters.category);
@@ -130,7 +130,7 @@ export const productService = {
   async getProduct(id: string) {
     const { data, error } = await supabase
       .from('products')
-      .select('*, categories(*)')
+      .select('*, categories(*), product_images(*)')
       .eq('id', id)
       .single();
 
@@ -668,7 +668,7 @@ export const reviewService = {
 
     if (reviews && reviews.length > 0) {
       const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
-      
+
       await supabase
         .from('products')
         .update({
