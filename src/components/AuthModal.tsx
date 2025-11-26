@@ -85,7 +85,7 @@ export function AuthModal({ mode, onClose, onLogin, onRegister, onSwitchMode }: 
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="pl-10"
-                  placeholder="John Doe"
+                  placeholder="Enter your name"
                   required
                 />
               </div>
@@ -119,7 +119,7 @@ export function AuthModal({ mode, onClose, onLogin, onRegister, onSwitchMode }: 
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   className="pl-10"
-                  placeholder="+1 (555) 000-0000"
+                  placeholder="+91 1234567890"
                   required
                 />
               </div>
