@@ -128,6 +128,38 @@ export const productImageService = {
     return data as ProductImage;
   },
 
+  // Create product image record directly (for URL-based images)
+  async createProductImageRecord(imageData: {
+    product_id: string;
+    image_url: string;
+    is_primary?: boolean;
+    display_order?: number;
+    alt_text?: string;
+  }) {
+    // If setting as primary, unset other primary images
+    if (imageData.is_primary) {
+      await supabase
+        .from('product_images')
+        .update({ is_primary: false })
+        .eq('product_id', imageData.product_id);
+    }
+
+    const { data, error } = await supabase
+      .from('product_images')
+      .insert({
+        product_id: imageData.product_id,
+        image_url: imageData.image_url,
+        is_primary: imageData.is_primary || false,
+        display_order: imageData.display_order || 0,
+        alt_text: imageData.alt_text,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as ProductImage;
+  },
+
   // Delete product image (admin only)
   async deleteProductImage(id: string) {
     // Get image details first

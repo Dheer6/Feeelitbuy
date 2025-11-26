@@ -60,6 +60,7 @@ interface HomeProps {
 export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onAddToCart }: HomeProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [adSlide, setAdSlide] = useState(0);
+  const [promoSlide, setPromoSlide] = useState(0);
   const [heroSlides, setHeroSlides] = useState([] as HeroBanner[]);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -112,6 +113,37 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
       image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=1200&q=80',
       badge: 'SALE',
       color: 'from-green-600 to-teal-600'
+    }
+  ];
+
+  // Promotional banners with image and text
+  const promoBanners = [
+    {
+      id: 1,
+      title: 'Buy Now & Get a Surprise Gift!',
+      subtitle: 'Every Purchase Receives a Gift',
+      description: 'Surprise Yourself with Our Exclusive Offers!',
+      image: 'https://images.unsplash.com/photo-1513885535751-8b9238bd345a?w=800&q=80',
+      buttonText: 'Shop Now',
+      background: 'bg-gradient-to-br from-blue-50 to-indigo-100'
+    },
+    {
+      id: 2,
+      title: 'Premium Quality Products',
+      subtitle: 'Trusted by Thousands',
+      description: 'Experience Excellence in Every Purchase!',
+      image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&q=80',
+      buttonText: 'Explore',
+      background: 'bg-gradient-to-br from-purple-50 to-pink-100'
+    },
+    {
+      id: 3,
+      title: 'Free Shipping on All Orders',
+      subtitle: 'No Minimum Purchase',
+      description: 'Get Your Favorite Products Delivered Free!',
+      image: 'https://images.unsplash.com/photo-1558769132-cb1aea9c3e67?w=800&q=80',
+      buttonText: 'Start Shopping',
+      background: 'bg-gradient-to-br from-green-50 to-teal-100'
     }
   ];
 
@@ -229,6 +261,14 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
     return () => clearInterval(timer);
   }, [advertisements.length]);
 
+  // Promotional banner carousel auto-rotation
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPromoSlide((prev: number) => (prev + 1) % promoBanners.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [promoBanners.length]);
+
   const nextSlide = () => {
     if (heroSlides.length === 0) return;
     setCurrentSlide((prev: number) => (prev + 1) % heroSlides.length);
@@ -247,18 +287,38 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
     setAdSlide((prev: number) => (prev - 1 + advertisements.length) % advertisements.length);
   };
 
+  const nextPromoSlide = () => {
+    setPromoSlide((prev: number) => (prev + 1) % promoBanners.length);
+  };
+
+  const prevPromoSlide = () => {
+    setPromoSlide((prev: number) => (prev - 1 + promoBanners.length) % promoBanners.length);
+  };
+
   const calculateDiscount = (product: Product) => {
-    if (product.originalPrice && product.price < product.originalPrice) {
+    // First check if discount field exists
+    if (product.discount && product.discount > 0) {
+      return Math.round(product.discount);
+    }
+    // Otherwise calculate from originalPrice
+    if (product.originalPrice && product.originalPrice > product.price) {
       return Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
     }
-    return product.discount || 0;
+    return 0;
   };
 
   const getDiscountedPrice = (product: Product) => {
-    if (product.discount && product.discount > 0) {
-      return product.price * (1 - product.discount / 100);
-    }
+    // The price in the product data is already the discounted price
+    // originalPrice is the pre-discount price
     return product.price;
+  };
+
+  const getOriginalPrice = (product: Product) => {
+    // Return original price if it exists and is higher than current price
+    if (product.originalPrice && product.originalPrice > product.price) {
+      return product.originalPrice;
+    }
+    return null;
   };
 
   const handleAddToCart = (product: Product) => {
@@ -276,7 +336,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
   return (
     <div className="min-h-screen bg-gray-50">
       {/* 1. MAIN HERO CAROUSEL */}
-      <section className="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 mb-0">
+      <section className="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
         <div className="relative h-[500px] md:h-[600px] w-full">
           {heroSlides.map((slide: HeroBanner, index: number) => (
             <div
@@ -362,43 +422,27 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
         </div>
       </section>
 
-      {/* 2. TRUST BADGES BAR */}
-      <section className="bg-white border-b border-gray-200 py-4 md:py-6">
-        <div className="container mx-auto px-4 md:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {trustBadges.map((badge, index) => {
-              const Icon = badge.icon;
-              return (
-                <div key={index} className="flex items-center justify-center gap-2 md:gap-3">
-                  <Icon className="w-6 h-6 md:w-8 md:h-8 text-indigo-600 flex-shrink-0" />
-                  <div className="text-left">
-                    <p className="text-xs md:text-sm font-semibold text-gray-900">{badge.title}</p>
-                    <p className="text-xs text-gray-500">{badge.description}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+     
 
       {/* 3. SEARCH BAR SECTION */}
-      <section className="py-8 md:py-12 bg-gradient-to-b from-white to-gray-50">
+      <section className="py-12 md:py-16 bg-linear-to-b from-white to-gray-50">
         <div className="container mx-auto px-4 md:px-8">
           <div className="max-w-3xl mx-auto">
-            <div className="relative">
-              <Search className="absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 md:w-6 md:h-6" />
-              <Input
-                type="text"
-                placeholder="Search for products, brands, and more..."
-                value={searchQuery}
-                onChange={(e: any) => setSearchQuery(e.target.value)}
-                onKeyPress={(e: any) => e.key === 'Enter' && handleSearch()}
-                className="w-full pl-12 md:pl-14 pr-24 md:pr-32 py-4 md:py-5 text-base md:text-lg rounded-2xl border-2 border-gray-200 focus:border-indigo-500 shadow-lg"
-              />
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 md:w-6 md:h-6" />
+                <Input
+                  type="text"
+                  placeholder="Search for products, brands, and more..."
+                  value={searchQuery}
+                  onChange={(e: any) => setSearchQuery(e.target.value)}
+                  onKeyPress={(e: any) => e.key === 'Enter' && handleSearch()}
+                  className="w-full pl-12 md:pl-14 py-4 md:py-5 text-base md:text-lg rounded-2xl border-2 border-gray-200 focus:border-indigo-500 shadow-lg"
+                />
+              </div>
               <Button
                 onClick={handleSearch}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-indigo-600 hover:bg-indigo-700 rounded-xl px-4 md:px-6 py-2 md:py-3"
+                className="bg-indigo-600 hover:bg-indigo-700 rounded-xl px-4 md:px-6 py-3 text-white"
               >
                 Search
               </Button>
@@ -408,7 +452,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
       </section>
 
       {/* 4. ADVERTISEMENT CAROUSEL - DEDICATED SECTION */}
-      <section className="py-8 md:py-12 bg-white">
+      <section className="py-12 md:py-16 bg-white">
         <div className="container mx-auto px-4 md:px-8">
           <div className="relative overflow-hidden rounded-3xl shadow-2xl">
             <div className="relative h-[300px] md:h-[400px] w-full">
@@ -423,9 +467,9 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
                       : 'opacity-0 translate-x-full z-0'
                   }`}
                 >
-                  <div className={`w-full h-full bg-gradient-to-r ${ad.color} relative`}>
+                  <div className={`w-full h-full bg-linear-to-r ${ad.color} relative`}>
                     <div className="absolute inset-0 bg-black/20"></div>
-                    <div className="container mx-auto px-6 md:px-12 h-full flex items-center relative z-10">
+                    <div className="container mx-auto px-4 md:px-8 h-full flex items-center relative z-10">
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center w-full">
                         <div className="text-left space-y-4 md:space-y-6">
                           <div className="inline-block">
@@ -496,8 +540,104 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
         </div>
       </section>
 
-      {/* 5. CATEGORIES GRID */}
+      {/* 5. PROMOTIONAL BANNER CAROUSEL - Image with Text */}
       <section className="py-12 md:py-16 bg-gray-50">
+        <div className="container mx-auto px-4 md:px-8">
+          <div className="relative overflow-hidden rounded-3xl shadow-2xl">
+            <div className="relative h-[400px] md:h-[450px] w-full">
+              {promoBanners.map((banner, index) => (
+                <div
+                  key={banner.id}
+                  className={`absolute inset-0 transition-all duration-700 ease-in-out ${
+                    index === promoSlide
+                      ? 'opacity-100 translate-x-0 z-10'
+                      : index < promoSlide
+                      ? 'opacity-0 -translate-x-full z-0'
+                      : 'opacity-0 translate-x-full z-0'
+                  }`}
+                >
+                  <div className={`w-full h-full ${banner.background} relative`}>
+                    <div className="container mx-auto px-4 md:px-8 h-full">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center h-full">
+                        {/* Text Content */}
+                        <div className="text-left space-y-4 md:space-y-6 order-2 lg:order-1 pb-8 lg:pb-0">
+                          <div className="inline-block">
+                            <span className="text-sm md:text-base text-indigo-600 font-semibold uppercase tracking-wide">
+                              {banner.subtitle}
+                            </span>
+                          </div>
+                          <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 leading-tight">
+                            {banner.title}
+                          </h2>
+                          <p className="text-lg md:text-xl text-gray-700 max-w-lg font-medium">
+                            {banner.description}
+                          </p>
+                          <Button
+                            size="lg"
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xl transition-all px-8 md:px-12 py-5 md:py-6 text-base md:text-lg font-bold rounded-xl hover:scale-105"
+                            onClick={() => onNavigate('catalog')}
+                          >
+                            {banner.buttonText} <ArrowRight className="w-5 h-5 md:w-6 md:h-6 ml-2" />
+                          </Button>
+                        </div>
+                        
+                        {/* Image Content */}
+                        <div className="flex justify-center items-center order-1 lg:order-2 pt-8 lg:pt-0">
+                          <div className="relative w-full max-w-md lg:max-w-lg">
+                            <div className="absolute inset-0 bg-indigo-400 rounded-3xl rotate-6 blur-2xl opacity-20"></div>
+                            <ImageWithFallback
+                              src={banner.image}
+                              alt={banner.title}
+                              className="relative z-10 w-full h-64 md:h-80 object-contain drop-shadow-2xl rounded-2xl transform hover:scale-105 transition-transform duration-300"
+                            />
+                            {/* Gift Badge Overlay */}
+                            <div className="absolute top-4 right-4 z-20 bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg animate-bounce">
+                              🎁 Gift Inside
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Navigation Arrows */}
+              <button
+                onClick={prevPromoSlide}
+                className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white text-gray-900 p-2 md:p-3 rounded-full transition-all shadow-xl hover:scale-110"
+                aria-label="Previous promo"
+              >
+                <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
+              </button>
+              <button
+                onClick={nextPromoSlide}
+                className="absolute right-4 md:right-6 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white text-gray-900 p-2 md:p-3 rounded-full transition-all shadow-xl hover:scale-110"
+                aria-label="Next promo"
+              >
+                <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
+              </button>
+
+              {/* Dots Indicator */}
+              <div className="absolute bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-2 md:gap-3">
+                {promoBanners.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setPromoSlide(index)}
+                    className={`transition-all rounded-full ${
+                      index === promoSlide ? 'bg-indigo-600 w-8 md:w-10 h-3' : 'bg-gray-400 w-3 h-3'
+                    }`}
+                    aria-label={`Go to promo ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 6. CATEGORIES GRID */}
+      <section className="py-12 md:py-16 bg-white">
         <div className="container mx-auto px-4 md:px-8">
           <div className="text-center mb-8 md:mb-12">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 md:mb-4">Shop by Category</h2>
@@ -525,9 +665,9 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
         </div>
       </section>
 
-      {/* 6. HOT DEALS SECTION */}
+      {/* 7. HOT DEALS SECTION */}
       {dealProducts.length > 0 && (
-        <section className="py-12 md:py-16 bg-gradient-to-r from-red-50 to-orange-50">
+        <section className="py-12 md:py-16 bg-gray-50">
           <div className="container mx-auto px-4 md:px-8">
             <div className="text-center mb-8 md:mb-12">
               <div className="inline-flex items-center gap-2 bg-red-600 text-white px-4 md:px-6 py-2 md:py-3 rounded-full mb-4 shadow-lg">
@@ -541,6 +681,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
               {dealProducts.map((product) => {
                 const discount = calculateDiscount(product);
                 const finalPrice = getDiscountedPrice(product);
+                const originalPrice = getOriginalPrice(product);
                 return (
                   <Card
                     key={product.id}
@@ -582,7 +723,9 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-xl md:text-2xl font-black text-red-600">{formatINR(finalPrice)}</p>
-                          <p className="text-sm md:text-base text-gray-500 line-through">{formatINR(product.price)}</p>
+                          {originalPrice && (
+                            <p className="text-sm md:text-base text-gray-500 line-through">{formatINR(originalPrice)}</p>
+                          )}
                         </div>
                         <Button
                           size="sm"
@@ -604,7 +747,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
         </section>
       )}
 
-      {/* 7. TOP PRODUCTS SECTION */}
+      {/* 8. TOP PRODUCTS SECTION */}
       <section className="py-12 md:py-16 bg-white">
         <div className="container mx-auto px-4 md:px-8">
           <div className="text-center mb-8 md:mb-12">
@@ -619,6 +762,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
             {topProducts.map((product) => {
               const discount = calculateDiscount(product);
               const finalPrice = getDiscountedPrice(product);
+              const originalPrice = getOriginalPrice(product);
               return (
                 <Card
                   key={product.id}
@@ -662,8 +806,8 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-lg md:text-xl font-bold text-indigo-600">{formatINR(finalPrice)}</p>
-                        {discount > 0 && (
-                          <p className="text-xs md:text-sm text-gray-500 line-through">{formatINR(product.price)}</p>
+                        {originalPrice && (
+                          <p className="text-xs md:text-sm text-gray-500 line-through">{formatINR(originalPrice)}</p>
                         )}
                       </div>
                       <Button
@@ -685,9 +829,9 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
         </div>
       </section>
 
-      {/* 8. FEATURED PRODUCT BANNER */}
+      {/* 9. FEATURED PRODUCT BANNER */}
       {featuredProduct && (
-        <section className="py-12 md:py-16 bg-gradient-to-r from-indigo-100 via-purple-100 to-pink-100">
+        <section className="py-12 md:py-16 bg-gray-50">
           <div className="container mx-auto px-4 md:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
               <div className="space-y-4 md:space-y-6 order-2 lg:order-1">
@@ -702,9 +846,16 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
                   {featuredProduct.description}
                 </p>
                 <div className="flex items-center gap-3 md:gap-4 flex-wrap">
-                  <p className="text-3xl md:text-4xl font-black text-indigo-600">
-                    {formatINR(getDiscountedPrice(featuredProduct))}
-                  </p>
+                  <div>
+                    <p className="text-3xl md:text-4xl font-black text-indigo-600">
+                      {formatINR(getDiscountedPrice(featuredProduct))}
+                    </p>
+                    {getOriginalPrice(featuredProduct) && (
+                      <p className="text-lg md:text-xl text-gray-500 line-through">
+                        {formatINR(getOriginalPrice(featuredProduct)!)}
+                      </p>
+                    )}
+                  </div>
                   {calculateDiscount(featuredProduct) > 0 && (
                     <div className="bg-red-600 text-white px-3 md:px-4 py-2 md:py-3 rounded-xl font-bold text-sm md:text-base shadow-lg">
                       {calculateDiscount(featuredProduct)}% OFF
@@ -732,7 +883,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
               </div>
               <div className="flex justify-center order-1 lg:order-2">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-400 to-purple-400 rounded-3xl rotate-6 blur-3xl opacity-30"></div>
+                  <div className="absolute inset-0 bg-linear-to-r from-indigo-400 to-purple-400 rounded-3xl rotate-6 blur-3xl opacity-30"></div>
                   <ImageWithFallback
                     src={featuredProduct.images[0]}
                     alt={featuredProduct.name}
@@ -745,7 +896,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
         </section>
       )}
 
-      {/* 9. WHY CHOOSE US / FEATURES */}
+      {/* 10. WHY CHOOSE US / FEATURES */}
       <section className="py-12 md:py-16 bg-white">
         <div className="container mx-auto px-4 md:px-8">
           <div className="text-center mb-8 md:mb-12">
@@ -772,7 +923,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
         </div>
       </section>
 
-      {/* 10. SERVICES SECTION */}
+      {/* 11. SERVICES SECTION */}
       <section className="py-12 md:py-16 bg-gray-50">
         <div className="container mx-auto px-4 md:px-8">
           <div className="text-center mb-8 md:mb-12">
@@ -787,7 +938,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
                   key={index}
                   className="group text-center p-8 md:p-10 bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-3 border-2 border-transparent hover:border-purple-200"
                 >
-                  <div className={`w-20 h-20 md:w-24 md:h-24 mx-auto mb-6 bg-gradient-to-r ${service.color} rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all shadow-xl`}>
+                  <div className={`w-20 h-20 md:w-24 md:h-24 mx-auto mb-6 bg-linear-to-r ${service.color} rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all shadow-xl`}>
                     <Icon className="w-10 h-10 md:w-12 md:h-12 text-white" />
                   </div>
                   <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 md:mb-4">{service.title}</h3>
@@ -799,8 +950,8 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
         </div>
       </section>
 
-      {/* 11. BRANDS SECTION */}
-      <section className="py-12 md:py-16 bg-white">
+      {/* 12. BRANDS SECTION */}
+      {/* <section className="py-12 md:py-16 bg-white">
         <div className="container mx-auto px-4 md:px-8">
           <div className="text-center mb-8 md:mb-12">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 md:mb-4">Trusted Brands</h2>
@@ -821,10 +972,10 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
-      {/* 12. ABOUT SECTION */}
-      <section className="py-12 md:py-16 bg-gradient-to-r from-gray-50 to-indigo-50">
+      {/* 13. ABOUT SECTION */}
+      <section className="py-12 md:py-16 bg-gray-50">
         <div className="container mx-auto px-4 md:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
             <div className="space-y-4 md:space-y-6 order-2 lg:order-1">
@@ -869,7 +1020,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
         </div>
       </section>
 
-      {/* 13. TESTIMONIALS SECTION */}
+      {/* 14. TESTIMONIALS SECTION */}
       <section className="py-12 md:py-16 bg-white">
         <div className="container mx-auto px-4 md:px-8">
           <div className="text-center mb-8 md:mb-12">
@@ -884,7 +1035,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
             {testimonials.map((testimonial, index) => (
               <Card
                 key={index}
-                className="p-6 md:p-8 bg-gradient-to-br from-gray-50 to-purple-50 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-2 border-transparent hover:border-purple-200"
+                className="p-6 md:p-8 bg-linear-to-br from-gray-50 to-purple-50 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-2 border-transparent hover:border-purple-200"
               >
                 <div className="flex items-center mb-6">
                   <ImageWithFallback
@@ -916,8 +1067,8 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
         </div>
       </section>
 
-      {/* 14. NEWSLETTER SECTION */}
-      <section className="py-12 md:py-16 bg-gradient-to-r from-indigo-600 to-purple-600">
+      {/* 15. NEWSLETTER SECTION */}
+      <section className="py-12 md:py-16 bg-linear-to-r from-indigo-600 to-purple-600">
         <div className="container mx-auto px-4 md:px-8">
           <div className="max-w-3xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white px-4 md:px-6 py-2 md:py-3 rounded-full mb-6 shadow-lg">
@@ -950,7 +1101,27 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
         </div>
       </section>
 
-      {/* 15. FOOTER */}
+       {/* 2. TRUST BADGES BAR */}
+      <section className="bg-white py-8 md:py-12">
+        <div className="container mx-auto px-4 md:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+            {trustBadges.map((badge, index) => {
+              const Icon = badge.icon;
+              return (
+                <div key={index} className="flex items-center justify-center gap-3 md:gap-4">
+                  <Icon className="w-8 h-8 md:w-10 md:h-10 text-indigo-600 shrink-0" />
+                  <div className="text-left">
+                    <p className="text-sm md:text-base font-bold text-gray-900">{badge.title}</p>
+                    <p className="text-xs md:text-sm text-gray-600">{badge.description}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* 16. FOOTER */}
       <footer className="bg-gray-900 text-white py-12 md:py-16">
         <div className="container mx-auto px-4 md:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
@@ -996,15 +1167,15 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
               <h4 className="text-base md:text-lg font-semibold mb-4 md:mb-6">Contact Info</h4>
               <ul className="space-y-3 md:space-y-4">
                 <li className="flex items-center">
-                  <Phone className="w-4 h-4 mr-3 text-gray-400 flex-shrink-0" />
+                  <Phone className="w-4 h-4 mr-3 text-gray-400 shrink-0" />
                   <span className="text-sm md:text-base text-gray-400">+91 12345 67890</span>
                 </li>
                 <li className="flex items-center">
-                  <Mail className="w-4 h-4 mr-3 text-gray-400 flex-shrink-0" />
+                  <Mail className="w-4 h-4 mr-3 text-gray-400 shrink-0" />
                   <span className="text-sm md:text-base text-gray-400">support@feelitbuy.com</span>
                 </li>
                 <li className="flex items-center">
-                  <MapPin className="w-4 h-4 mr-3 text-gray-400 flex-shrink-0" />
+                  <MapPin className="w-4 h-4 mr-3 text-gray-400 shrink-0" />
                   <span className="text-sm md:text-base text-gray-400">Mumbai, India</span>
                 </li>
               </ul>

@@ -5,6 +5,7 @@ import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
+import { formatINR } from '../../lib/currency';
 import {
   Table,
   TableBody,
@@ -127,7 +128,7 @@ export function AdminOrders({ orders, onUpdateOrderStatus }: AdminOrdersProps) {
                   </p>
                 </TableCell>
                 <TableCell>
-                  <p className="text-sm text-indigo-600">${order.total.toFixed(2)}</p>
+                  <p className="text-sm text-indigo-600">{formatINR(order.total)}</p>
                 </TableCell>
                 <TableCell>
                   <div>

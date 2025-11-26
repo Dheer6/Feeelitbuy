@@ -142,7 +142,7 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
                     onChange={(e) =>
                       setShippingDetails({ ...shippingDetails, city: e.target.value })
                     }
-                    placeholder="New York"
+                    placeholder="Mumbai"
                     required
                   />
                 </div>
@@ -178,7 +178,7 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
                     onChange={(e) =>
                       setShippingDetails({ ...shippingDetails, country: e.target.value })
                     }
-                    placeholder="USA"
+                    placeholder="india"
                     required
                   />
                 </div>

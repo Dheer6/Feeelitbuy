@@ -45,7 +45,7 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancel
   };
 
   const downloadInvoice = (order: Order) => {
-    // Generate invoice HTML
+    // Generate professional invoice HTML
     const invoiceHTML = `
       <!DOCTYPE html>
       <html>
@@ -53,37 +53,333 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancel
         <meta charset="UTF-8">
         <title>Invoice - ${order.id}</title>
         <style>
-          body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #4F46E5; padding-bottom: 20px; }
-          .company-name { font-size: 28px; font-weight: bold; color: #4F46E5; margin-bottom: 5px; }
-          .invoice-title { font-size: 24px; margin-top: 10px; }
-          .details { display: flex; justify-content: space-between; margin-bottom: 30px; }
-          .details-section { flex: 1; }
-          .details-section h3 { font-size: 14px; color: #666; margin-bottom: 10px; }
-          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-          th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-          th { background-color: #f3f4f6; font-weight: bold; }
-          .total-row { font-weight: bold; font-size: 18px; background-color: #f9fafb; }
-          .footer { margin-top: 40px; text-align: center; color: #666; font-size: 12px; border-top: 1px solid #ddd; padding-top: 20px; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            max-width: 900px; 
+            margin: 0 auto; 
+            padding: 40px 30px; 
+            background: #ffffff;
+            color: #333;
+            line-height: 1.6;
+          }
+          
+          /* Header Section */
+          .invoice-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start;
+            margin-bottom: 40px; 
+            padding-bottom: 30px; 
+            border-bottom: 3px solid #4F46E5; 
+          }
+          .company-info {
+            flex: 1;
+          }
+          .logo-container {
+            margin-bottom: 15px;
+          }
+          .logo {
+            max-width: 180px;
+            height: auto;
+          }
+          .company-name { 
+            font-size: 32px; 
+            font-weight: bold; 
+            color: #4F46E5; 
+            margin-bottom: 8px; 
+          }
+          .company-tagline {
+            color: #666;
+            font-size: 14px;
+            font-style: italic;
+            margin-bottom: 12px;
+          }
+          .company-contact {
+            font-size: 13px;
+            color: #555;
+            line-height: 1.8;
+          }
+          .company-contact p {
+            margin: 4px 0;
+          }
+          
+          .invoice-meta {
+            text-align: right;
+            background: #F3F4F6;
+            padding: 20px;
+            border-radius: 8px;
+            min-width: 280px;
+          }
+          .invoice-title { 
+            font-size: 28px; 
+            font-weight: bold;
+            color: #1F2937;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+          }
+          .invoice-meta p {
+            margin: 6px 0;
+            font-size: 14px;
+          }
+          .invoice-meta strong {
+            color: #4F46E5;
+            font-weight: 600;
+          }
+          
+          /* Details Section */
+          .details-container { 
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px; 
+          }
+          .details-box {
+            background: #F9FAFB;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #4F46E5;
+          }
+          .details-box h3 { 
+            font-size: 16px; 
+            color: #4F46E5; 
+            margin-bottom: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          .details-box p {
+            margin: 6px 0;
+            font-size: 14px;
+            color: #374151;
+          }
+          .details-box strong {
+            color: #1F2937;
+            font-weight: 600;
+            display: inline-block;
+            min-width: 120px;
+          }
+          
+          /* Table Styles */
+          .table-wrapper {
+            margin: 30px 0;
+            overflow-x: auto;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-radius: 8px;
+          }
+          table { 
+            width: 100%; 
+            border-collapse: collapse;
+            background: white;
+          }
+          thead {
+            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+          }
+          th { 
+            padding: 16px 12px; 
+            text-align: left; 
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          td { 
+            padding: 14px 12px; 
+            border-bottom: 1px solid #E5E7EB;
+            font-size: 14px;
+            color: #374151;
+          }
+          tbody tr:hover {
+            background-color: #F9FAFB;
+          }
+          tbody tr:last-child td {
+            border-bottom: none;
+          }
+          
+          /* Summary Section */
+          .summary-section {
+            margin-top: 30px;
+            display: flex;
+            justify-content: flex-end;
+          }
+          .summary-box {
+            min-width: 350px;
+            background: #F9FAFB;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #E5E7EB;
+          }
+          .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 14px;
+            color: #374151;
+          }
+          .summary-row.subtotal {
+            border-bottom: 1px solid #D1D5DB;
+          }
+          .summary-row.total {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1F2937;
+            padding-top: 12px;
+            border-top: 2px solid #4F46E5;
+            margin-top: 8px;
+          }
+          .summary-row.total .amount {
+            color: #4F46E5;
+            font-size: 22px;
+          }
+          
+          /* Notes Section */
+          .notes-section {
+            margin: 40px 0 30px 0;
+            padding: 20px;
+            background: #FEF3C7;
+            border-left: 4px solid #F59E0B;
+            border-radius: 4px;
+          }
+          .notes-section h4 {
+            color: #92400E;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+          }
+          .notes-section p {
+            color: #78350F;
+            font-size: 13px;
+          }
+          
+          /* Signature Section */
+          .signature-section {
+            margin-top: 60px;
+            display: flex;
+            justify-content: space-between;
+            padding-top: 30px;
+            border-top: 2px solid #E5E7EB;
+          }
+          .signature-box {
+            text-align: center;
+            min-width: 250px;
+          }
+          .signature-line {
+            width: 200px;
+            margin: 40px auto 10px auto;
+            border-top: 2px solid #374151;
+          }
+          .signature-label {
+            font-size: 13px;
+            color: #6B7280;
+            margin-top: 8px;
+          }
+          .signature-name {
+            font-weight: 600;
+            color: #1F2937;
+            font-size: 15px;
+            margin-top: 4px;
+          }
+          .signature-designation {
+            font-size: 12px;
+            color: #9CA3AF;
+            font-style: italic;
+          }
+          
+          /* Footer */
+          .footer { 
+            margin-top: 50px; 
+            text-align: center; 
+            padding-top: 25px; 
+            border-top: 2px solid #E5E7EB;
+          }
+          .footer-thank-you {
+            font-size: 16px;
+            color: #4F46E5;
+            font-weight: 600;
+            margin-bottom: 12px;
+          }
+          .footer-contact {
+            color: #6B7280; 
+            font-size: 13px;
+            margin: 6px 0;
+          }
+          .footer-legal {
+            margin-top: 15px;
+            font-size: 11px;
+            color: #9CA3AF;
+          }
+          
+          /* Payment Status Badge */
+          .payment-status {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 8px;
+          }
+          .payment-status.paid {
+            background: #D1FAE5;
+            color: #065F46;
+          }
+          .payment-status.pending {
+            background: #FEF3C7;
+            color: #92400E;
+          }
+          
+          @media print {
+            body { padding: 20px; }
+            .no-print { display: none; }
+          }
         </style>
       </head>
       <body>
-        <div class="header">
-          <div class="company-name">Feel It Buy</div>
-          <div class="invoice-title">INVOICE</div>
-        </div>
-        
-        <div class="details">
-          <div class="details-section">
-            <h3>Invoice Details</h3>
-            <p><strong>Invoice Number:</strong> INV-${order.id.substring(0, 8).toUpperCase()}</p>
-            <p><strong>Order ID:</strong> ${order.id}</p>
-            <p><strong>Date:</strong> ${new Date(order.createdAt).toLocaleDateString()}</p>
-            <p><strong>Payment Status:</strong> ${order.paymentStatus}</p>
+        <!-- Header with Logo and Invoice Info -->
+        <div class="invoice-header">
+          <div class="company-info">
+            <div class="logo-container">
+              <img src="/fib-logo.png" alt="Feel It Buy Logo" class="logo" />
+            </div>
+            <div class="company-tagline">Your Trusted Shopping Destination</div>
+            <div class="company-contact">
+              <p>📍 Mumbai, Maharashtra, India</p>
+              <p>📧 support@feelitbuy.com</p>
+              <p>📞 +91 12345 67890</p>
+              <p>🌐 www.feelitbuy.com</p>
+            </div>
           </div>
           
-          <div class="details-section">
-            <h3>Shipping Address</h3>
+          <div class="invoice-meta">
+            <div class="invoice-title">INVOICE</div>
+            <p><strong>Invoice #:</strong> INV-${order.id.substring(0, 8).toUpperCase()}</p>
+            <p><strong>Order ID:</strong> ${order.id.substring(0, 12)}</p>
+            <p><strong>Date:</strong> ${new Date(order.createdAt).toLocaleDateString('en-IN', { 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })}</p>
+            <div class="payment-status ${order.paymentStatus === 'paid' ? 'paid' : 'pending'}">
+              ${order.paymentStatus.toUpperCase()}
+            </div>
+          </div>
+        </div>
+        
+        <!-- Bill To and Ship To Details -->
+        <div class="details-container">
+          <div class="details-box">
+            <h3>📋 Invoice Details</h3>
+            <p><strong>Customer Name:</strong> ${order.shippingAddress.name || 'Valued Customer'}</p>
+            <p><strong>Order Date:</strong> ${new Date(order.createdAt).toLocaleDateString('en-IN')}</p>
+            <p><strong>Payment Method:</strong> ${order.paymentMethod || 'Online Payment'}</p>
+            <p><strong>Status:</strong> ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}</p>
+          </div>
+          
+          <div class="details-box">
+            <h3>🚚 Shipping Address</h3>
+            <p><strong>Name:</strong> ${order.shippingAddress.name || 'Customer'}</p>
             <p>${order.shippingAddress.street}</p>
             <p>${order.shippingAddress.city}, ${order.shippingAddress.state}</p>
             <p>${order.shippingAddress.zipCode}</p>
@@ -91,34 +387,90 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancel
           </div>
         </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>Quantity</th>
-              <th>Price</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${order.items.map(item => `
+        <!-- Items Table -->
+        <div class="table-wrapper">
+          <table>
+            <thead>
               <tr>
-                <td>${item.product.name}</td>
-                <td>${item.quantity}</td>
-                <td>${formatINR(item.product.price)}</td>
-                <td>${formatINR(item.product.price * item.quantity)}</td>
+                <th style="width: 50%;">Item Description</th>
+                <th style="width: 15%; text-align: center;">Qty</th>
+                <th style="width: 17.5%; text-align: right;">Unit Price</th>
+                <th style="width: 17.5%; text-align: right;">Amount</th>
               </tr>
-            `).join('')}
-            <tr class="total-row">
-              <td colspan="3" style="text-align: right;">TOTAL</td>
-              <td>${formatINR(order.total)}</td>
-            </tr>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              ${order.items.map(item => `
+                <tr>
+                  <td>
+                    <strong>${item.product.name}</strong>
+                    ${item.product.brand ? `<br><small style="color: #6B7280;">Brand: ${item.product.brand}</small>` : ''}
+                  </td>
+                  <td style="text-align: center;">${item.quantity}</td>
+                  <td style="text-align: right;">${formatINR(item.product.price)}</td>
+                  <td style="text-align: right;"><strong>${formatINR(item.product.price * item.quantity)}</strong></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
 
+        <!-- Summary Section -->
+        <div class="summary-section">
+          <div class="summary-box">
+            <div class="summary-row subtotal">
+              <span>Subtotal:</span>
+              <span>${formatINR(order.total)}</span>
+            </div>
+            <div class="summary-row">
+              <span>Tax (included):</span>
+              <span>${formatINR(0)}</span>
+            </div>
+            <div class="summary-row">
+              <span>Shipping:</span>
+              <span>FREE</span>
+            </div>
+            <div class="summary-row total">
+              <span>Grand Total:</span>
+              <span class="amount">${formatINR(order.total)}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="notes-section">
+          <h4>💡 Important Notes:</h4>
+          <p>• This is a computer-generated invoice and does not require a physical signature.</p>
+          <p>• Please retain this invoice for your records and warranty claims.</p>
+          <p>• For any queries or support, contact us at support@feelitbuy.com</p>
+        </div>
+
+        <!-- Signature Section -->
+        <div class="signature-section">
+          <div class="signature-box">
+            <div class="signature-label">Customer Acknowledgement</div>
+            <div class="signature-line"></div>
+            <div class="signature-name">Signature</div>
+            <div class="signature-designation">Date: _____________</div>
+          </div>
+          
+          <div class="signature-box">
+            <div class="signature-label">Authorized Signatory</div>
+            <div class="signature-line"></div>
+            <div class="signature-name">Feel It Buy Management</div>
+            <div class="signature-designation">Director & Owner</div>
+          </div>
+        </div>
+
+        <!-- Footer -->
         <div class="footer">
-          <p>Thank you for shopping with Feel It Buy!</p>
-          <p>For any queries, please contact us at support@feelitbuy.com</p>
+          <div class="footer-thank-you">Thank you for shopping with Feel It Buy!</div>
+          <p class="footer-contact">For support: support@feelitbuy.com | +91 12345 67890</p>
+          <p class="footer-contact">Visit us at www.feelitbuy.com</p>
+          <p class="footer-legal">
+            This invoice is generated electronically and is valid without signature. | 
+            Terms & Conditions Apply | 
+            © ${new Date().getFullYear()} Feel It Buy. All rights reserved.
+          </p>
         </div>
       </body>
       </html>
@@ -344,7 +696,7 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancel
               <div className="space-y-4">
                 {selectedOrder.items.map((item) => (
                   <div key={item.product.id} className="flex gap-4 pb-4 border-b last:border-b-0">
-                    <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                    <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                       <ImageWithFallback
                         src={item.product.images[0]}
                         alt={item.product.name}

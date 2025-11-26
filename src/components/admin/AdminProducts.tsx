@@ -15,6 +15,7 @@ import {
 } from '../ui/table';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import { productService } from '../../lib/supabaseService';
+import { productImageService } from '../../lib/supabaseEnhanced';
 import { formatINR } from '../../lib/currency';
 import {
   Dialog,
@@ -45,7 +46,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
     stock: 0,
     category: 'electronics',
     brand: '',
-    image_url: '',
+    image_urls: [''],
     discountType: 'none' as 'none' | 'percentage' | 'amount',
     discountValue: 0,
   });
@@ -60,7 +61,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
       stock: 0,
       category: 'electronics',
       brand: '',
-      image_url: '',
+      image_urls: [''],
       discountType: 'none',
       discountValue: 0,
     });
@@ -89,7 +90,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
       stock: product.stock,
       category: product.category,
       brand: product.brand,
-      image_url: product.images[0] || '',
+      image_urls: product.images.length > 0 ? product.images : [''],
       discountType,
       discountValue,
     });
@@ -118,6 +119,8 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
     
     try {
       setSaving(true);
+      let productId: string;
+      
       if (editingProduct) {
         // Update existing product
         await productService.updateProduct(editingProduct.id, {
@@ -125,23 +128,41 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
           description: formData.description,
           price: formData.price,
           stock: formData.stock,
-          image_url: formData.image_url,
           discount: discount > 0 ? discount : undefined,
           original_price: discount > 0 ? originalPrice : undefined,
         } as any);
+        productId = editingProduct.id;
+        
+        // Delete all existing images for this product
+        const existingImages = await productImageService.getProductImages(productId);
+        for (const img of existingImages) {
+          await productImageService.deleteProductImage(img.id);
+        }
       } else {
         // Create new product
-        await productService.createProduct({
+        const newProduct = await productService.createProduct({
           name: formData.name,
           description: formData.description,
           price: formData.price,
           stock: formData.stock,
-          image_url: formData.image_url,
           category_id: null, // You might need to map category to category_id
           is_featured: false,
           discount: discount > 0 ? discount : undefined,
           original_price: discount > 0 ? originalPrice : undefined,
         } as any);
+        productId = newProduct.id;
+      }
+      
+      // Save images to product_images table
+      const validImageUrls = formData.image_urls.filter(url => url.trim() !== '');
+      for (let i = 0; i < validImageUrls.length; i++) {
+        await productImageService.createProductImageRecord({
+          product_id: productId,
+          image_url: validImageUrls[i],
+          is_primary: i === 0, // First image is primary
+          display_order: i,
+          alt_text: `${formData.name} - Image ${i + 1}`,
+        });
       }
       
       setShowDialog(false);
@@ -159,6 +180,14 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
     
     try {
       setDeleting(productId);
+      
+      // Delete all images associated with this product
+      const images = await productImageService.getProductImages(productId);
+      for (const img of images) {
+        await productImageService.deleteProductImage(img.id);
+      }
+      
+      // Delete the product
       await productService.deleteProduct(productId);
       if (onProductsChange) onProductsChange();
     } catch (error) {
@@ -451,24 +480,70 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
                 />
               </div>
             </div>
-            <div>
-              <Label htmlFor="image_url">Image URL</Label>
-              <Input
-                id="image_url"
-                value={formData.image_url}
-                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                placeholder="https://example.com/image.jpg"
-              />
-              {formData.image_url && (
-                <div className="mt-2">
-                  <img 
-                    src={formData.image_url} 
-                    alt="Preview" 
-                    className="w-32 h-32 object-cover rounded-lg"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Product Images</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFormData({ ...formData, image_urls: [...formData.image_urls, ''] })}
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  Add Image
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {formData.image_urls.map((url, index) => (
+                  <div key={index} className="flex gap-2">
+                    <div className="flex-1">
+                      <Input
+                        value={url}
+                        onChange={(e) => {
+                          const newUrls = [...formData.image_urls];
+                          newUrls[index] = e.target.value;
+                          setFormData({ ...formData, image_urls: newUrls });
+                        }}
+                        placeholder={index === 0 ? "Primary image URL" : `Image ${index + 1} URL`}
+                      />
+                    </div>
+                    {formData.image_urls.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const newUrls = formData.image_urls.filter((_, i) => i !== index);
+                          setFormData({ ...formData, image_urls: newUrls.length > 0 ? newUrls : [''] });
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {formData.image_urls.some(url => url.trim() !== '') && (
+                <div className="grid grid-cols-4 gap-2 mt-3">
+                  {formData.image_urls
+                    .filter(url => url.trim() !== '')
+                    .map((url, index) => (
+                      <div key={index} className="relative">
+                        <img 
+                          src={url} 
+                          alt={`Preview ${index + 1}`} 
+                          className="w-full h-20 object-cover rounded-lg border"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                        {index === 0 && (
+                          <Badge className="absolute top-1 left-1 text-xs" variant="default">
+                            Primary
+                          </Badge>
+                        )}
+                      </div>
+                    ))}
                 </div>
               )}
             </div>

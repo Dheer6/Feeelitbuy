@@ -30,6 +30,19 @@ export function ProductCatalog({
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 2000]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedRating, setSelectedRating] = useState<number>(0);
+  const [inStock, setInStock] = useState(false);
+  const [onSale, setOnSale] = useState(false);
+  
+  // Electronics-specific filters
+  const [selectedScreenSizes, setSelectedScreenSizes] = useState<string[]>([]);
+  const [selectedStorage, setSelectedStorage] = useState<string[]>([]);
+  const [selectedProcessors, setSelectedProcessors] = useState<string[]>([]);
+  
+  // Furniture-specific filters
+  const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [selectedRoomTypes, setSelectedRoomTypes] = useState<string[]>([]);
 
   const filteredProducts = useMemo(() => {
     let filtered = products;
@@ -57,6 +70,21 @@ export function ProductCatalog({
       filtered = filtered.filter((p) => selectedBrands.includes(p.brand));
     }
 
+    // Filter by rating
+    if (selectedRating > 0) {
+      filtered = filtered.filter((p) => p.rating >= selectedRating);
+    }
+
+    // Filter by stock availability
+    if (inStock) {
+      filtered = filtered.filter((p) => p.stock > 0);
+    }
+
+    // Filter by sale/discount
+    if (onSale) {
+      filtered = filtered.filter((p) => p.originalPrice && p.originalPrice > p.price);
+    }
+
     // Sort
     switch (sortBy) {
       case 'price-low':
@@ -77,7 +105,7 @@ export function ProductCatalog({
     }
 
     return filtered;
-  }, [products, category, searchQuery, sortBy, priceRange, selectedBrands]);
+  }, [products, category, searchQuery, sortBy, priceRange, selectedBrands, selectedRating, inStock, onSale]);
 
   const brands = useMemo(() => {
     const categoryProducts =
@@ -89,6 +117,31 @@ export function ProductCatalog({
     setSelectedBrands((prev) =>
       prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
     );
+  };
+
+  // Electronics filter options
+  const screenSizes = ['13"', '15"', '24"', '32"', '43"', '55"', '65"'];
+  const storageOptions = ['128GB', '256GB', '512GB', '1TB', '2TB'];
+  const processors = ['Intel i3', 'Intel i5', 'Intel i7', 'AMD Ryzen 5', 'AMD Ryzen 7'];
+  
+  // Furniture filter options
+  const materials = ['Wood', 'Metal', 'Fabric', 'Leather', 'Glass', 'Plastic'];
+  const colors = ['Black', 'White', 'Brown', 'Gray', 'Beige', 'Blue', 'Red'];
+  const roomTypes = ['Living Room', 'Bedroom', 'Dining Room', 'Office', 'Kitchen', 'Outdoor'];
+
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setPriceRange([0, 2000]);
+    setSelectedBrands([]);
+    setSelectedRating(0);
+    setInStock(false);
+    setOnSale(false);
+    setSelectedScreenSizes([]);
+    setSelectedStorage([]);
+    setSelectedProcessors([]);
+    setSelectedMaterials([]);
+    setSelectedColors([]);
+    setSelectedRoomTypes([]);
   };
 
   return (
@@ -141,59 +194,303 @@ export function ProductCatalog({
         {/* Filters Sidebar */}
         <div className={`lg:block ${showFilters ? 'block' : 'hidden'}`}>
           <Card className="p-6 sticky top-20">
-            <h3 className="mb-4">Filters</h3>
-
-            {/* Price Range */}
-            <div className="mb-6">
-              <Label className="mb-3 block">Price Range</Label>
-              <div className="space-y-2">
-                <Input
-                  type="range"
-                  min="0"
-                  max="2000"
-                  step="50"
-                  value={priceRange[1]}
-                  onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>{formatINR(priceRange[0])}</span>
-                  <span>{formatINR(priceRange[1])}</span>
-                </div>
-              </div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Filters</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearAllFilters}
+                className="text-xs"
+              >
+                Clear All
+              </Button>
             </div>
 
-            {/* Brands */}
-            <div className="mb-6">
-              <Label className="mb-3 block">Brand</Label>
-              <div className="space-y-2">
-                {brands.map((brand) => (
-                  <div key={brand} className="flex items-center">
+            <div className="space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
+              {/* Availability */}
+              <div className="pb-6 border-b">
+                <Label className="mb-3 block font-semibold">Availability</Label>
+                <div className="space-y-2">
+                  <div className="flex items-center">
                     <Checkbox
-                      id={brand}
-                      checked={selectedBrands.includes(brand)}
-                      onCheckedChange={() => toggleBrand(brand)}
+                      id="inStock"
+                      checked={inStock}
+                      onCheckedChange={(checked) => setInStock(!!checked)}
                     />
-                    <label htmlFor={brand} className="ml-2 text-sm cursor-pointer">
-                      {brand}
+                    <label htmlFor="inStock" className="ml-2 text-sm cursor-pointer">
+                      In Stock Only
                     </label>
                   </div>
-                ))}
+                  <div className="flex items-center">
+                    <Checkbox
+                      id="onSale"
+                      checked={onSale}
+                      onCheckedChange={(checked) => setOnSale(!!checked)}
+                    />
+                    <label htmlFor="onSale" className="ml-2 text-sm cursor-pointer">
+                      On Sale
+                    </label>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Clear Filters */}
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => {
-                setSearchQuery('');
-                setPriceRange([0, 2000]);
-                setSelectedBrands([]);
-              }}
-            >
-              Clear Filters
-            </Button>
+              {/* Price Range */}
+              <div className="pb-6 border-b">
+                <Label className="mb-3 block font-semibold">Price Range</Label>
+                <div className="space-y-2">
+                  <Input
+                    type="range"
+                    min="0"
+                    max="2000"
+                    step="50"
+                    value={priceRange[1]}
+                    onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>{formatINR(priceRange[0])}</span>
+                    <span>{formatINR(priceRange[1])}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Rating Filter */}
+              <div className="pb-6 border-b">
+                <Label className="mb-3 block font-semibold">Customer Rating</Label>
+                <div className="space-y-2">
+                  {[4, 3, 2, 1].map((rating) => (
+                    <div key={rating} className="flex items-center">
+                      <Checkbox
+                        id={`rating-${rating}`}
+                        checked={selectedRating === rating}
+                        onCheckedChange={(checked) => setSelectedRating(checked ? rating : 0)}
+                      />
+                      <label
+                        htmlFor={`rating-${rating}`}
+                        className="ml-2 text-sm cursor-pointer flex items-center"
+                      >
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-4 h-4 ${
+                              i < rating
+                                ? 'fill-yellow-400 text-yellow-400'
+                                : 'fill-gray-300 text-gray-300'
+                            }`}
+                          />
+                        ))}
+                        <span className="ml-1">& Up</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Brands */}
+              {brands.length > 0 && (
+                <div className="pb-6 border-b">
+                  <Label className="mb-3 block font-semibold">Brand</Label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {brands.map((brand) => (
+                      <div key={brand} className="flex items-center">
+                        <Checkbox
+                          id={brand}
+                          checked={selectedBrands.includes(brand)}
+                          onCheckedChange={() => toggleBrand(brand)}
+                        />
+                        <label htmlFor={brand} className="ml-2 text-sm cursor-pointer">
+                          {brand}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Electronics-specific filters */}
+              {category === 'electronics' && (
+                <>
+                  {/* Screen Size */}
+                  <div className="pb-6 border-b">
+                    <Label className="mb-3 block font-semibold">Screen Size</Label>
+                    <div className="space-y-2">
+                      {screenSizes.map((size) => (
+                        <div key={size} className="flex items-center">
+                          <Checkbox
+                            id={`screen-${size}`}
+                            checked={selectedScreenSizes.includes(size)}
+                            onCheckedChange={() => {
+                              setSelectedScreenSizes((prev) =>
+                                prev.includes(size)
+                                  ? prev.filter((s) => s !== size)
+                                  : [...prev, size]
+                              );
+                            }}
+                          />
+                          <label
+                            htmlFor={`screen-${size}`}
+                            className="ml-2 text-sm cursor-pointer"
+                          >
+                            {size}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Storage */}
+                  <div className="pb-6 border-b">
+                    <Label className="mb-3 block font-semibold">Storage Capacity</Label>
+                    <div className="space-y-2">
+                      {storageOptions.map((storage) => (
+                        <div key={storage} className="flex items-center">
+                          <Checkbox
+                            id={`storage-${storage}`}
+                            checked={selectedStorage.includes(storage)}
+                            onCheckedChange={() => {
+                              setSelectedStorage((prev) =>
+                                prev.includes(storage)
+                                  ? prev.filter((s) => s !== storage)
+                                  : [...prev, storage]
+                              );
+                            }}
+                          />
+                          <label
+                            htmlFor={`storage-${storage}`}
+                            className="ml-2 text-sm cursor-pointer"
+                          >
+                            {storage}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Processor */}
+                  <div className="pb-6 border-b">
+                    <Label className="mb-3 block font-semibold">Processor</Label>
+                    <div className="space-y-2">
+                      {processors.map((processor) => (
+                        <div key={processor} className="flex items-center">
+                          <Checkbox
+                            id={`processor-${processor}`}
+                            checked={selectedProcessors.includes(processor)}
+                            onCheckedChange={() => {
+                              setSelectedProcessors((prev) =>
+                                prev.includes(processor)
+                                  ? prev.filter((p) => p !== processor)
+                                  : [...prev, processor]
+                              );
+                            }}
+                          />
+                          <label
+                            htmlFor={`processor-${processor}`}
+                            className="ml-2 text-sm cursor-pointer"
+                          >
+                            {processor}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Furniture-specific filters */}
+              {category === 'furniture' && (
+                <>
+                  {/* Material */}
+                  <div className="pb-6 border-b">
+                    <Label className="mb-3 block font-semibold">Material</Label>
+                    <div className="space-y-2">
+                      {materials.map((material) => (
+                        <div key={material} className="flex items-center">
+                          <Checkbox
+                            id={`material-${material}`}
+                            checked={selectedMaterials.includes(material)}
+                            onCheckedChange={() => {
+                              setSelectedMaterials((prev) =>
+                                prev.includes(material)
+                                  ? prev.filter((m) => m !== material)
+                                  : [...prev, material]
+                              );
+                            }}
+                          />
+                          <label
+                            htmlFor={`material-${material}`}
+                            className="ml-2 text-sm cursor-pointer"
+                          >
+                            {material}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Color */}
+                  <div className="pb-6 border-b">
+                    <Label className="mb-3 block font-semibold">Color</Label>
+                    <div className="space-y-2">
+                      {colors.map((color) => (
+                        <div key={color} className="flex items-center">
+                          <Checkbox
+                            id={`color-${color}`}
+                            checked={selectedColors.includes(color)}
+                            onCheckedChange={() => {
+                              setSelectedColors((prev) =>
+                                prev.includes(color)
+                                  ? prev.filter((c) => c !== color)
+                                  : [...prev, color]
+                              );
+                            }}
+                          />
+                          <label
+                            htmlFor={`color-${color}`}
+                            className="ml-2 text-sm cursor-pointer flex items-center gap-2"
+                          >
+                            <span
+                              className="w-4 h-4 rounded-full border"
+                              style={{
+                                backgroundColor: color.toLowerCase(),
+                              }}
+                            />
+                            {color}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Room Type */}
+                  <div className="pb-6 border-b">
+                    <Label className="mb-3 block font-semibold">Room Type</Label>
+                    <div className="space-y-2">
+                      {roomTypes.map((room) => (
+                        <div key={room} className="flex items-center">
+                          <Checkbox
+                            id={`room-${room}`}
+                            checked={selectedRoomTypes.includes(room)}
+                            onCheckedChange={() => {
+                              setSelectedRoomTypes((prev) =>
+                                prev.includes(room)
+                                  ? prev.filter((r) => r !== room)
+                                  : [...prev, room]
+                              );
+                            }}
+                          />
+                          <label
+                            htmlFor={`room-${room}`}
+                            className="ml-2 text-sm cursor-pointer"
+                          >
+                            {room}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </Card>
         </div>
 
@@ -204,11 +501,7 @@ export function ProductCatalog({
               <p className="text-gray-500 mb-4">No products found matching your criteria.</p>
               <Button
                 variant="outline"
-                onClick={() => {
-                  setSearchQuery('');
-                  setPriceRange([0, 2000]);
-                  setSelectedBrands([]);
-                }}
+                onClick={clearAllFilters}
               >
                 Clear Filters
               </Button>
