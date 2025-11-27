@@ -1,0 +1,43 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Expo
+.expo/
+.expo-shared/
+
+# Build
+build/
+dist/
+web-build/
+
+# Environment
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Metro
+metro-cache/
+
+# Misc
+*.log
+*.lock
+
+# TypeScript
+*.tsbuildinfo
+
+# Coverage
+coverage/
+
+# Others
+*.expo
+*.expo-shared
