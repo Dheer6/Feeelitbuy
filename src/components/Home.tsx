@@ -40,6 +40,8 @@ import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Input } from './ui/input';
 import { useState, useEffect, useRef } from 'react';
 import { formatINR } from '../lib/currency';
+import { ShoppingCart, Truck, Shield, Star, ChevronRight, Menu, X, Smartphone, Tv, Sofa, Bed, Laptop, Headphones, ArrowRight, MapPin, Phone, Mail } from 'lucide-react';
+
 
 interface HomeProps {
   onNavigate: (page: string) => void;
@@ -349,6 +351,75 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
               </Button>
             </div>
           </Card>
+        </div>
+      </section>
+
+
+      {/* Hero Section */}
+      <section id="home" className="pt-20 bg-gradient-to-br from-blue-50 via-white to-red-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6 animate-in slide-in-from-left duration-700">
+              <div className="inline-flex items-center space-x-2 bg-red-100 text-red-600 px-4 py-2 rounded-full text-sm font-medium">
+                <MapPin className="w-4 h-4" />
+                <span>Serving All Over India, Especially Karnataka</span>
+              </div>
+              
+              <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
+                Feel The Quality,
+                <span className="text-red-500"> Buy With Confidence</span>
+              </h1>
+              
+              <p className="text-xl text-gray-600 leading-relaxed">
+                Premium electronics and furniture delivered to your doorstep. Experience quality shopping with Feel It Buy.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button className="bg-red-500 text-white px-8 py-4 rounded-full hover:bg-red-600 transition-all hover:shadow-xl flex items-center justify-center space-x-2 group">
+                  <span className="font-medium">Shop Now</span>
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </button>
+                <button className="bg-white text-gray-700 px-8 py-4 rounded-full border-2 border-gray-200 hover:border-red-500 hover:text-red-500 transition-all font-medium">
+                  Explore Categories
+                </button>
+              </div>
+            </div>
+
+            <div className="relative animate-in slide-in-from-right duration-700">
+              <div className="relative z-10">
+                <div className="bg-gradient-to-br from-red-500 to-blue-600 rounded-3xl p-8 shadow-2xl transform hover:scale-105 transition-transform duration-300">
+                  <div className="text-white text-center space-y-4">
+                    <div className="text-6xl">🛍️</div>
+                    <h3 className="text-2xl font-bold">10,000+ Products</h3>
+                    <p className="text-white/90">Electronics & Furniture</p>
+                  </div>
+                </div>
+              </div>
+              <div className="absolute -top-6 -right-6 w-72 h-72 bg-blue-200 rounded-full blur-3xl opacity-50 animate-pulse"></div>
+              <div className="absolute -bottom-6 -left-6 w-72 h-72 bg-red-200 rounded-full blur-3xl opacity-50 animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {features.map((feature, idx) => (
+              <div 
+                key={idx}
+                className="text-center p-6 rounded-2xl hover:bg-gray-50 transition-all hover:shadow-lg group animate-in fade-in zoom-in-95"
+                style={{ animationDelay: `${idx * 100}ms` }}
+              >
+                <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-red-500 transition-colors">
+                  <feature.icon className="w-8 h-8 text-red-500 group-hover:text-white transition-colors" />
+                </div>
+                <h3 className="font-bold text-lg mb-2 text-gray-900">{feature.title}</h3>
+                <p className="text-gray-600">{feature.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
