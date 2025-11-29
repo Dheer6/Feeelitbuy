@@ -9,6 +9,7 @@ import { UserProfile } from './components/UserProfile';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AuthModal } from './components/AuthModal';
 import { Header } from './components/Header';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { Product, User, Order, CartItem } from './types';
 import { mockProducts } from './data/mockProducts';
 import { productService, cartService, wishlistService, authService, orderService, addressService } from './lib/supabaseService';
@@ -710,7 +711,7 @@ export default function App() {
         currentPage={currentPage}
       />
 
-      <main className="pt-16">
+      <main className="pt-16 pb-20 lg:pb-0">
         {productsLoading && (
           <div className="container mx-auto px-4 py-4 text-sm text-gray-500">Loading products...</div>
         )}
@@ -731,6 +732,19 @@ export default function App() {
           }
         />
       )}
+
+      <MobileBottomNav
+        currentPage={currentPage}
+        cartItemCount={cart.reduce((sum: number, item: CartItem) => sum + item.quantity, 0)}
+        onNavigate={(page) => {
+          if (page === 'profile' && !currentUser) {
+            setAuthMode('login');
+            setShowAuthModal(true);
+          } else {
+            setCurrentPage(page);
+          }
+        }}
+      />
     </div>
   );
 }
