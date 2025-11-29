@@ -6,6 +6,7 @@ interface DbProductRow {
   name: string;
   description?: string;
   price: number;
+  original_price?: number;
   rating?: number;
   reviews_count?: number;
   is_featured?: boolean;
@@ -59,7 +60,8 @@ export async function adaptDbProduct(db: DbProductRow): Promise<Product> {
   if (images.length === 0) images = [PLACEHOLDER_IMAGE];
 
   const price = db.price;
-  const originalPrice = price * 1.2; // synthetic discount baseline
+  // Prefer real original price from DB when available; fallback to price (no discount)
+  const originalPrice = typeof db.original_price === 'number' ? db.original_price : db.price;
 
   const product: Product = {
     id: db.id,

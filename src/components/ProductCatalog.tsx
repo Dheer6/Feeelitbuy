@@ -521,7 +521,7 @@ export function ProductCatalog({
                       alt={product.name}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                     />
-                    {product.originalPrice && (
+                    {product.originalPrice && product.originalPrice > product.price && (
                       <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-md text-sm">
                         {Math.round(
                           ((product.originalPrice - product.price) / product.originalPrice) * 100

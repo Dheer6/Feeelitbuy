@@ -40,7 +40,7 @@ import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Input } from './ui/input';
 import { useState, useEffect, useRef } from 'react';
 import { formatINR } from '../lib/currency';
-import { ShoppingCart, Truck, Shield, Star, ChevronRight, Menu, X, Smartphone, Tv, Sofa, Bed, Laptop, Headphones, ArrowRight, MapPin, Phone, Mail } from 'lucide-react';
+// Removed duplicate import
 
 
 interface HomeProps {
@@ -803,49 +803,39 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onA
           </div>
 
           <div className="max-w-4xl mx-auto relative">
-            {testimonials.map((testimonial, index) => (
-              <div
-                key={testimonial.id}
-                className={`transition-all duration-500 ${index === currentTestimonial ? 'opacity-100 relative' : 'opacity-0 absolute inset-0'
-                  }`}
-              >
-                <Card className="p-8 md:p-12 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-100">
-                  <Quote className="w-12 h-12 text-blue-600 mb-6 opacity-50" />
-                  <p className="text-xl md:text-2xl text-gray-700 mb-8 leading-relaxed">
-                    "{testimonial.text}"
-                  </p>
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={testimonial.image}
-                      alt={testimonial.name}
-                      className="w-16 h-16 rounded-full border-4 border-white shadow-lg"
-                    />
-                    <div>
-                      <h4 className="font-bold text-gray-900 text-lg">{testimonial.name}</h4>
-                      <p className="text-gray-600">{testimonial.location}</p>
-                      <div className="flex items-center gap-1 mt-1">
-                        {[...Array(testimonial.rating)].map((_, i) => (
-                          <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-            ))}
-
-            {/* Testimonial Dots */}
-            <div className="flex justify-center gap-2 mt-8">
-              {testimonials.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentTestimonial(index)}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${index === currentTestimonial ? 'bg-blue-600 w-8' : 'bg-gray-300 hover:bg-gray-400'
-                    }`}
-                />
-              ))}
-            </div>
-          </div>
+  <Card className="p-8 md:p-12 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-100">
+    <Quote className="w-12 h-12 text-blue-600 mb-6 opacity-50" />
+    <p className="text-xl italic text-gray-800 mb-6">
+      "{testimonials[currentTestimonial].text}"
+    </p>
+    <div className="flex items-center gap-4">
+      <img
+        src={testimonials[currentTestimonial].image}
+        alt={testimonials[currentTestimonial].name}
+        className="w-16 h-16 rounded-full object-cover"
+      />
+      <div>
+        <div className="font-bold text-lg text-gray-900">{testimonials[currentTestimonial].name}</div>
+        <div className="text-gray-600 text-sm">{testimonials[currentTestimonial].location}</div>
+        <div className="flex gap-1 mt-1">
+          {Array.from({ length: testimonials[currentTestimonial].rating }).map((_, i) => (
+            <Star key={i} className="w-4 h-4 text-yellow-400" />
+          ))}
+        </div>
+      </div>
+    </div>
+  </Card>
+  {/* Testimonial Dots */}
+  <div className="flex justify-center gap-2 mt-8">
+    {testimonials.map((_, index) => (
+      <button
+        key={index}
+        onClick={() => setCurrentTestimonial(index)}
+        className={`w-3 h-3 rounded-full transition-all duration-300 ${index === currentTestimonial ? 'bg-blue-600 w-8' : 'bg-gray-300 hover:bg-gray-400'}`}
+      />
+    ))}
+  </div>
+</div>
         </div>
       </section>
 

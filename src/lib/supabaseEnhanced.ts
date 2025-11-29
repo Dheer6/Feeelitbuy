@@ -312,6 +312,16 @@ export const couponService = {
     return data as Coupon[];
   },
 
+  // Get all coupons (active + inactive)
+  async getAllCoupons() {
+    const { data, error } = await supabase
+      .from('coupons')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data as Coupon[];
+  },
+
   // Get single coupon by code
   async getCouponByCode(code: string) {
     const { data, error } = await supabase

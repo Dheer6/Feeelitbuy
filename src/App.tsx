@@ -12,6 +12,7 @@ import { Header } from './components/Header';
 import { Product, User, Order, CartItem } from './types';
 import { mockProducts } from './data/mockProducts';
 import { productService, cartService, wishlistService, authService, orderService, addressService } from './lib/supabaseService';
+import { couponService } from './lib/supabaseEnhanced';
 import { adaptDbProducts } from './lib/productAdapter';
 import { adaptDbOrders } from './lib/orderAdapter';
 import { supabase } from './lib/supabase';
@@ -306,19 +307,27 @@ export default function App() {
   const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/600x600.png?text=Product';
 
   function adaptServerProduct(row: any): Product {
-    const base = row.products || row; // cart_items returns products(*) inside row
+    const base = row.products || row; // cart_items returns products(*, product_images(*)) inside row
+    const productImages = Array.isArray(base.product_images) ? base.product_images : [];
+    const images = productImages.length
+      ? productImages
+          .sort((a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0))
+          .map((pi: any) => pi.image_url)
+      : base.image_url
+        ? [base.image_url]
+        : [PLACEHOLDER_IMAGE];
     return {
       id: base.id,
       name: base.name || 'Unnamed Product',
       description: base.description || 'No description provided.',
       price: base.price || 0,
-      originalPrice: (base.price || 0) * 1.2,
+      originalPrice: base.original_price || (base.price ? base.price * 1.2 : 0),
       category: 'electronics', // simplified until categories fully mapped
       subcategory: 'general',
-      brand: 'Generic',
-      images: base.images && base.images.length ? base.images : [PLACEHOLDER_IMAGE],
-      specifications: {},
-      stock: 100,
+      brand: base.brand || 'Generic',
+      images,
+      specifications: base.specifications || {},
+      stock: base.stock ?? 0,
       rating: base.rating || 0,
       reviewCount: base.reviews_count || 0,
       featured: !!base.is_featured,
@@ -425,7 +434,7 @@ export default function App() {
     }
   };
 
-  const placeOrder = async (shippingDetails: any, paymentMethod: string) => {
+  const placeOrder = async (shippingDetails: any, paymentMethod: string, coupon?: any, discountAmount?: number) => {
     if (!currentUser) {
       alert('Please login to place an order');
       return;
@@ -470,6 +479,16 @@ export default function App() {
       };
 
       const createdOrder = await orderService.createOrder(orderData);
+
+      // Record coupon usage if applied
+      if (coupon && discountAmount && discountAmount > 0) {
+        try {
+          await couponService.applyCoupon(coupon.id, createdOrder.id, discountAmount);
+        } catch (couponErr: any) {
+          console.error('Failed to record coupon usage:', couponErr);
+          // Non-fatal
+        }
+      }
 
       // Fetch full order details
       const fullOrder = await orderService.getOrder(createdOrder.id);

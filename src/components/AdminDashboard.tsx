@@ -27,6 +27,7 @@ import { AdminOrders } from './admin/AdminOrders';
 import { AdminUsers } from './admin/AdminUsers';
 import { AdminAnalytics } from './admin/AdminAnalytics';
 import { AdminBanners } from './admin/AdminBanners';
+import { AdminCoupons } from './admin/AdminCoupons';
 import { formatINR } from '../lib/currency';
 
 interface AdminDashboardProps {
@@ -90,6 +91,10 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
           <TabsTrigger value="banners">
             <Image className="w-4 h-4 mr-2" />
             Banners
+          </TabsTrigger>
+          <TabsTrigger value="coupons">
+            <DollarSign className="w-4 h-4 mr-2" />
+            Coupons
           </TabsTrigger>
           <TabsTrigger value="analytics">
             <TrendingUp className="w-4 h-4 mr-2" />
@@ -234,7 +239,7 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
           {lowStockProducts > 0 && (
             <Card className="p-6 bg-orange-50 border-orange-200">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center shrink-0">
                   <Package className="w-5 h-5 text-orange-600" />
                 </div>
                 <div>
@@ -275,6 +280,11 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
         {/* Banners Tab */}
         <TabsContent value="banners">
           <AdminBanners />
+        </TabsContent>
+
+        {/* Coupons Tab */}
+        <TabsContent value="coupons">
+          <AdminCoupons />
         </TabsContent>
 
         {/* Analytics Tab */}

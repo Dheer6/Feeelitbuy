@@ -246,7 +246,7 @@ export const cartService = {
 
     const { data, error } = await supabase
       .from('cart_items')
-      .select('*, products(*)')
+      .select('*, products(*, product_images(*))')
       .eq('user_id', user.id);
 
     if (error) throw error;
@@ -272,7 +272,7 @@ export const cartService = {
         .from('cart_items')
         .update({ quantity: existing.quantity + quantity })
         .eq('id', existing.id)
-        .select('*, products(*)')
+        .select('*, products(*, product_images(*))')
         .single();
 
       if (error) throw error;
@@ -286,7 +286,7 @@ export const cartService = {
           product_id: productId,
           quantity,
         })
-        .select('*, products(*)')
+        .select('*, products(*, product_images(*))')
         .single();
 
       if (error) throw error;
@@ -300,7 +300,7 @@ export const cartService = {
       .from('cart_items')
       .update({ quantity })
       .eq('id', itemId)
-      .select('*, products(*)')
+      .select('*, products(*, product_images(*))')
       .single();
 
     if (error) throw error;

@@ -15,12 +15,26 @@ interface CartProps {
 }
 
 export function Cart({ items, onUpdateQuantity, onRemove, onCheckout, onContinueShopping, onViewProduct }: CartProps) {
-  const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+
+  // Ensure each product has images array mapped from product_images
+  const mappedItems = items.map(item => {
+    const product = { ...item.product };
+    if (product.product_images && Array.isArray(product.product_images) && product.product_images.length > 0) {
+      product.images = product.product_images.map(img => img.image_url);
+    } else if (product.image_url) {
+      product.images = [product.image_url];
+    } else {
+      product.images = [];
+    }
+    return { ...item, product };
+  });
+
+  const subtotal = mappedItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const shipping = subtotal > 500 ? 0 : 25;
   const tax = subtotal * 0.18;
   const total = subtotal + shipping + tax;
 
-  if (items.length === 0) {
+  if (mappedItems.length === 0) {
     return (
       <div className="container mx-auto px-4 py-16">
         <Card className="max-w-md mx-auto p-12 text-center">
@@ -37,16 +51,16 @@ export function Cart({ items, onUpdateQuantity, onRemove, onCheckout, onContinue
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="mb-8">Shopping Cart ({items.length} items)</h1>
+      <h1 className="mb-8">Shopping Cart ({mappedItems.length} items)</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Cart Items */}
         <div className="lg:col-span-2 space-y-4">
-          {items.map((item) => (
+          {mappedItems.map((item) => (
             <Card key={item.product.id} className="p-4">
               <div className="flex gap-4">
                 <div
-                  className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                  className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={() => onViewProduct(item.product)}
                 >
                   <ImageWithFallback
@@ -143,19 +157,19 @@ export function Cart({ items, onUpdateQuantity, onRemove, onCheckout, onContinue
             {/* Benefits */}
             <div className="mt-6 pt-6 border-t space-y-3">
               <div className="flex items-start gap-3 text-sm">
-                <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
                   <span className="text-green-600">✓</span>
                 </div>
                 <p className="text-gray-600">Secure checkout</p>
               </div>
               <div className="flex items-start gap-3 text-sm">
-                <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
                   <span className="text-green-600">✓</span>
                 </div>
                 <p className="text-gray-600">30-day return policy</p>
               </div>
               <div className="flex items-start gap-3 text-sm">
-                <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
                   <span className="text-green-600">✓</span>
                 </div>
                 <p className="text-gray-600">Real-time order tracking</p>

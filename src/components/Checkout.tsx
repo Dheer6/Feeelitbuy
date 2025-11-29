@@ -20,7 +20,7 @@ const RAZORPAY_KEY = 'rzp_live_Bzuaj1lGfUylYf';
 
 interface CheckoutProps {
   items: CartItem[];
-  onPlaceOrder: (shippingDetails: Address, paymentMethod: string) => void;
+  onPlaceOrder: (shippingDetails: Address, paymentMethod: string, coupon?: any, discountAmount?: number) => void;
   onBack: () => void;
   user: User | null;
 }
@@ -39,7 +39,15 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const shipping = subtotal > 500 ? 0 : 25;
   const tax = subtotal * 0.08;
-  const total = subtotal + shipping + tax;
+  // Coupon state
+  const [couponCode, setCouponCode] = useState<string>('');
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
+  const [discountAmount, setDiscountAmount] = useState<number>(0);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
+
+  // Compute total after discount
+  const total = Math.max(0, subtotal + shipping + tax - discountAmount);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +80,7 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
         console.log('Payment successful:', response);
         setIsProcessing(false);
         // Now place the order with payment ID
-        onPlaceOrder(shippingDetails, `razorpay_${response.razorpay_payment_id}`);
+        onPlaceOrder(shippingDetails, `razorpay_${response.razorpay_payment_id}`, appliedCoupon, discountAmount);
       },
       prefill: {
         name: user?.name || '',
@@ -263,7 +271,7 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
               <div className="space-y-3 mb-6 max-h-64 overflow-y-auto">
                 {items.map((item) => (
                   <div key={item.product.id} className="flex gap-3">
-                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                       <ImageWithFallback
                         src={item.product.images?.[0] || ''}
                         alt={item.product.name}
@@ -281,6 +289,78 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
                 ))}
               </div>
 
+              {/* Coupon Code */}
+              <div className="mb-6">
+                <Label htmlFor="coupon" className="mb-2 block">Coupon Code</Label>
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between border rounded-lg p-3 bg-green-50">
+                    <div>
+                      <p className="text-sm font-semibold text-green-700">{appliedCoupon.code} applied</p>
+                      <p className="text-xs text-green-600">You saved {formatINR(discountAmount)}</p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => { setAppliedCoupon(null); setDiscountAmount(0); setCouponCode(''); }}>
+                      Remove
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      id="coupon"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      placeholder="SAVE10"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={!couponCode || validatingCoupon}
+                      onClick={async () => {
+                        setCouponError(null);
+                        setValidatingCoupon(true);
+                        try {
+                          // Fetch coupon by code using edge (simple manual validation)
+                          const { couponService } = await import('../lib/supabaseEnhanced');
+                          const all = await couponService.getAllCoupons();
+                          const found = all.find(c => c.code.toUpperCase() === couponCode.toUpperCase());
+                          if (!found) {
+                            setCouponError('Invalid coupon code');
+                          } else {
+                            const now = new Date();
+                            const starts = new Date(found.valid_from);
+                            const ends = found.valid_until ? new Date(found.valid_until) : null;
+                            if (!found.is_active || now < starts || (ends && now > ends)) {
+                              setCouponError('Coupon not active');
+                            } else if (subtotal < found.min_purchase_amount) {
+                              setCouponError(`Minimum purchase ${formatINR(found.min_purchase_amount)}`);
+                            } else if (found.usage_limit && found.usage_count >= found.usage_limit) {
+                              setCouponError('Coupon usage limit reached');
+                            } else {
+                              let discount = found.discount_type === 'percentage'
+                                ? (subtotal * (found.discount_value / 100))
+                                : found.discount_value;
+                              if (found.max_discount_amount && discount > found.max_discount_amount) {
+                                discount = found.max_discount_amount;
+                              }
+                              discount = Math.min(discount, subtotal);
+                              setAppliedCoupon(found);
+                              setDiscountAmount(discount);
+                            }
+                          }
+                        } catch (err: any) {
+                          setCouponError(err.message || 'Failed to validate coupon');
+                        } finally {
+                          setValidatingCoupon(false);
+                        }
+                      }}
+                    >
+                      {validatingCoupon ? 'Applying...' : 'Apply'}
+                    </Button>
+                  </div>
+                )}
+                {couponError && <p className="text-xs text-red-600 mt-2">{couponError}</p>}
+              </div>
+
               {/* Pricing */}
               <div className="space-y-3 mb-6 pt-6 border-t">
                 <div className="flex justify-between text-gray-600">
@@ -295,6 +375,12 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
                   <span>Tax</span>
                   <span>{formatINR(tax)}</span>
                 </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount ({appliedCoupon?.code})</span>
+                    <span>-{formatINR(discountAmount)}</span>
+                  </div>
+                )}
                 <div className="border-t pt-3 flex justify-between">
                   <span>Total</span>
                   <span className="text-indigo-600">{formatINR(total)}</span>
