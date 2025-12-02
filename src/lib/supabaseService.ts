@@ -359,7 +359,7 @@ export const orderService = {
 
     const { data, error } = await supabase
       .from('orders')
-      .select('*, order_items(*, products(*)), addresses(*)')
+      .select('*, order_items(*, products(*)), addresses(*), coupon_usage(*, coupons(*))')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
@@ -371,7 +371,7 @@ export const orderService = {
   async getOrder(id: string) {
     const { data, error } = await supabase
       .from('orders')
-      .select('*, order_items(*, products(*)), addresses(*)')
+      .select('*, order_items(*, products(*)), addresses(*), coupon_usage(*, coupons(*))')
       .eq('id', id)
       .single();
 
@@ -446,7 +446,7 @@ export const orderService = {
   async getAllOrders() {
     const { data, error } = await supabase
       .from('orders')
-      .select('*, order_items(*, products(*)), addresses(*), profiles(full_name, email)')
+      .select('*, order_items(*, products(*)), addresses(*), profiles(full_name, email), coupon_usage(*, coupons(*))')
       .order('created_at', { ascending: false });
 
     if (error) throw error;

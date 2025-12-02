@@ -14,6 +14,7 @@ interface DbOrderRow {
   order_items?: any[];
   addresses?: any;
   profiles?: { full_name?: string; email?: string };
+  coupon_usage?: any[];
 }
 
 const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/600x600.png?text=Product';
@@ -62,6 +63,11 @@ export function adaptDbOrder(row: DbOrderRow): Order {
     quantity: oi.quantity || 0,
   }));
 
+  // Extract coupon information if available
+  const couponUsage = Array.isArray(row.coupon_usage) && row.coupon_usage.length > 0 ? row.coupon_usage[0] : null;
+  const couponCode = couponUsage?.coupons?.code || undefined;
+  const couponDiscount = couponUsage?.discount_amount || undefined;
+
   return {
     id: row.id,
     userId: row.user_id,
@@ -77,6 +83,8 @@ export function adaptDbOrder(row: DbOrderRow): Order {
     updatedAt: row.updated_at,
     estimatedDelivery: row.estimated_delivery || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     trackingNumber: row.tracking_number,
+    couponCode,
+    couponDiscount,
   };
 }
 

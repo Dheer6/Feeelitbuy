@@ -45,6 +45,8 @@ export interface Address {
   state: string;
   zipCode: string;
   country: string;
+  phone?: string;
+  alternatePhone?: string;
 }
 
 export interface CartItem {
@@ -68,6 +70,8 @@ export interface Order {
   updatedAt?: string;
   estimatedDelivery: string;
   trackingNumber?: string;
+  couponCode?: string;
+  couponDiscount?: number;
 }
 
 export interface ReturnRequest {

@@ -215,34 +215,59 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancel
       // Get Y position after table
       const finalY = (doc as any).lastAutoTable.finalY || tableStartY + 40;
       
+      // Calculate breakdown from order items
+      const itemsSubtotal = order.items.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+      const shippingCost = itemsSubtotal > 500 ? 0 : 25;
+      const taxRate = 0.18; // 18% GST
+      const taxAmount = itemsSubtotal * taxRate;
+      const totalBeforeDiscount = itemsSubtotal + shippingCost + taxAmount;
+      const discountAmount = Math.max(0, totalBeforeDiscount - order.total);
+      
       // Summary Box
       const summaryX = 130;
       const summaryY = finalY + 10;
       
+      const summaryLines = discountAmount > 0 ? 5 : 4;
+      const summaryHeight = summaryLines * 6 + 10;
+      
       doc.setLineWidth(0.5);
-      doc.rect(summaryX, summaryY, 60, 30, 'S');
+      doc.rect(summaryX, summaryY, 60, summaryHeight, 'S');
       
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
-      doc.text('Subtotal:', summaryX + 5, summaryY + 7);
-      doc.text(formatPdfPrice(order.total), summaryX + 55, summaryY + 7, { align: 'right' });
+      let currentY = summaryY + 7;
       
-      doc.text('Tax (GST 18%):', summaryX + 5, summaryY + 13);
-      doc.text('Included', summaryX + 55, summaryY + 13, { align: 'right' });
+      doc.text('Subtotal:', summaryX + 5, currentY);
+      doc.text(formatPdfPrice(itemsSubtotal), summaryX + 55, currentY, { align: 'right' });
+      currentY += 6;
       
-      doc.text('Shipping:', summaryX + 5, summaryY + 19);
-      doc.text('FREE', summaryX + 55, summaryY + 19, { align: 'right' });
+      doc.text('Tax (GST 18%):', summaryX + 5, currentY);
+      doc.text(formatPdfPrice(taxAmount), summaryX + 55, currentY, { align: 'right' });
+      currentY += 6;
+      
+      doc.text('Shipping:', summaryX + 5, currentY);
+      doc.text(shippingCost === 0 ? 'FREE' : formatPdfPrice(shippingCost), summaryX + 55, currentY, { align: 'right' });
+      currentY += 6;
+      
+      if (discountAmount > 0) {
+        doc.setTextColor(0, 128, 0); // Green for discount
+        const discountLabel = order.couponCode ? `Discount (${order.couponCode}):` : 'Discount:';
+        doc.text(discountLabel, summaryX + 5, currentY);
+        doc.text(`-${formatPdfPrice(discountAmount)}`, summaryX + 55, currentY, { align: 'right' });
+        doc.setTextColor(0, 0, 0); // Reset to black
+        currentY += 6;
+      }
       
       doc.setLineWidth(1);
-      doc.line(summaryX, summaryY + 22, summaryX + 60, summaryY + 22);
+      doc.line(summaryX, currentY - 3, summaryX + 60, currentY - 3);
       
       doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
-      doc.text('TOTAL:', summaryX + 5, summaryY + 28);
-      doc.text(formatPdfPrice(order.total), summaryX + 55, summaryY + 28, { align: 'right' });
+      doc.text('TOTAL:', summaryX + 5, currentY + 3);
+      doc.text(formatPdfPrice(order.total), summaryX + 55, currentY + 3, { align: 'right' });
       
       // Terms & Conditions
-      const termsY = summaryY + 40;
+      const termsY = summaryY + summaryHeight + 10;
       doc.setFillColor(245, 245, 245);
       doc.rect(20, termsY, 170, 20, 'F');
       doc.setLineWidth(0.5);

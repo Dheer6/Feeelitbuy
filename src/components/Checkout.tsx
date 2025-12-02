@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ArrowLeft, CreditCard, Wallet, Building2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, CreditCard, Wallet, Building2, Banknote, Loader2 } from 'lucide-react';
 import { CartItem, User, Address } from '../types';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -8,6 +8,7 @@ import { Label } from './ui/label';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { formatINR } from '../lib/currency';
+import { addressService } from '../lib/supabaseService';
 
 // Razorpay types
 declare global {
@@ -27,14 +28,18 @@ interface CheckoutProps {
 
 export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
   const [shippingDetails, setShippingDetails] = useState<Address>({
+    name: user?.name || '',
     street: user?.address?.street || '',
     city: user?.address?.city || '',
     state: user?.address?.state || '',
     zipCode: user?.address?.zipCode || '',
     country: user?.address?.country || 'India',
+    phone: user?.phone || '',
+    alternatePhone: user?.address?.alternatePhone || '',
   });
-  const [paymentMethod, setPaymentMethod] = useState('card');
+  const [paymentMethod, setPaymentMethod] = useState('razorpay');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [loadingAddress, setLoadingAddress] = useState(true);
 
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const shipping = subtotal > 500 ? 0 : 25;
@@ -48,19 +53,69 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
 
   // Compute total after discount
   const total = Math.max(0, subtotal + shipping + tax - discountAmount);
+  
+  // Check if COD is available (only for orders below 5000)
+  const isCODAvailable = total < 5000;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Load saved address on mount
+  useEffect(() => {
+    const loadSavedAddress = async () => {
+      if (!user) {
+        setLoadingAddress(false);
+        return;
+      }
+      
+      try {
+        const addresses = await addressService.getAddresses();
+        if (addresses && addresses.length > 0) {
+          // Use the most recent address
+          const latestAddress = addresses[0] as any;
+          setShippingDetails({
+            name: user.name || '',
+            street: latestAddress.address_line1 || '',
+            city: latestAddress.city || '',
+            state: latestAddress.state || '',
+            zipCode: latestAddress.postal_code || '',
+            country: latestAddress.country || 'India',
+            phone: latestAddress.phone || user.phone || '',
+            alternatePhone: latestAddress.alternate_phone || '',
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load saved address:', error);
+      } finally {
+        setLoadingAddress(false);
+      }
+    };
+
+    loadSavedAddress();
+  }, [user]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    initiateRazorpayPayment();
+    
+    // Validate shipping details
+    if (!shippingDetails.name || !shippingDetails.street || !shippingDetails.city || !shippingDetails.state || !shippingDetails.zipCode || !shippingDetails.phone) {
+      alert('Please fill in all required shipping details');
+      return;
+    }
+    
+    if (paymentMethod === 'cod') {
+      // COD - directly place order
+      setIsProcessing(true);
+      try {
+        await onPlaceOrder(shippingDetails, 'cod', appliedCoupon, discountAmount);
+      } catch (error) {
+        console.error('Order placement failed:', error);
+        setIsProcessing(false);
+      }
+    } else {
+      // Razorpay payment
+      initiateRazorpayPayment();
+    }
   };
 
   const initiateRazorpayPayment = () => {
-    // Validate shipping details
-    if (!shippingDetails.street || !shippingDetails.city || !shippingDetails.state || !shippingDetails.zipCode) {
-      alert('Please fill in all shipping details');
-      return;
-    }
-
     if (!window.Razorpay) {
       alert('Razorpay is not loaded. Please refresh the page and try again.');
       return;
@@ -74,7 +129,7 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
       currency: 'INR',
       name: 'Feel It Buy',
       description: `Order for ${items.length} item(s)`,
-      image: 'https://your-logo-url.com/logo.png', // Optional: Add your logo URL
+      image: '/fib-logo.png',
       handler: function (response: any) {
         // Payment successful
         console.log('Payment successful:', response);
@@ -83,9 +138,9 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
         onPlaceOrder(shippingDetails, `razorpay_${response.razorpay_payment_id}`, appliedCoupon, discountAmount);
       },
       prefill: {
-        name: user?.name || '',
+        name: shippingDetails.name || user?.name || '',
         email: user?.email || '',
-        contact: user?.phone || ''
+        contact: shippingDetails.phone || user?.phone || ''
       },
       notes: {
         address: `${shippingDetails.street}, ${shippingDetails.city}, ${shippingDetails.state} ${shippingDetails.zipCode}`,
@@ -114,11 +169,23 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Button variant="ghost" onClick={onBack} className="mb-6">
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back to Cart
-      </Button>
+    <>
+      {/* Loading Overlay */}
+      {isProcessing && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-8 max-w-sm mx-4 text-center shadow-2xl">
+            <Loader2 className="w-16 h-16 text-indigo-600 animate-spin mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Processing Your Order</h3>
+            <p className="text-sm text-gray-600">Please wait while we confirm your order...</p>
+          </div>
+        </div>
+      )}
+
+      <div className="container mx-auto px-4 py-8">
+        <Button variant="ghost" onClick={onBack} className="mb-6" disabled={isProcessing}>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Cart
+        </Button>
 
       <h1 className="mb-8">Checkout</h1>
 
@@ -130,6 +197,41 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
             <Card className="p-6">
               <h2 className="mb-6">Shipping Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    value={shippingDetails.name}
+                    onChange={(e) =>
+                      setShippingDetails({ ...shippingDetails, name: e.target.value })
+                    }
+                    placeholder="John Doe"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    value={shippingDetails.phone}
+                    onChange={(e) =>
+                      setShippingDetails({ ...shippingDetails, phone: e.target.value })
+                    }
+                    placeholder="+91 98765 43210"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="alternatePhone">Alternate Phone (Optional)</Label>
+                  <Input
+                    id="alternatePhone"
+                    value={shippingDetails.alternatePhone}
+                    onChange={(e) =>
+                      setShippingDetails({ ...shippingDetails, alternatePhone: e.target.value })
+                    }
+                    placeholder="+91 98765 43210"
+                  />
+                </div>
                 <div className="md:col-span-2">
                   <Label htmlFor="street">Street Address</Label>
                   <Input
@@ -199,66 +301,29 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
               <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer hover:bg-gray-50">
-                    <RadioGroupItem value="card" id="card" />
-                    <Label htmlFor="card" className="flex items-center cursor-pointer flex-1">
+                    <RadioGroupItem value="razorpay" id="razorpay" />
+                    <Label htmlFor="razorpay" className="flex items-center cursor-pointer flex-1">
                       <CreditCard className="w-5 h-5 mr-3 text-indigo-600" />
-                      Credit / Debit Card
+                      <div>
+                        <div className="font-medium">Razorpay</div>
+                        <div className="text-xs text-gray-500">UPI, Cards, Wallets, Net Banking</div>
+                      </div>
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer hover:bg-gray-50">
-                    <RadioGroupItem value="upi" id="upi" />
-                    <Label htmlFor="upi" className="flex items-center cursor-pointer flex-1">
-                      <Wallet className="w-5 h-5 mr-3 text-indigo-600" />
-                      UPI / Digital Wallet
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer hover:bg-gray-50">
-                    <RadioGroupItem value="bank" id="bank" />
-                    <Label htmlFor="bank" className="flex items-center cursor-pointer flex-1">
-                      <Building2 className="w-5 h-5 mr-3 text-indigo-600" />
-                      Net Banking
+                  <div className={`flex items-center space-x-3 border rounded-lg p-4 ${isCODAvailable ? 'cursor-pointer hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'}`}>
+                    <RadioGroupItem value="cod" id="cod" disabled={!isCODAvailable} />
+                    <Label htmlFor="cod" className={`flex items-center flex-1 ${isCODAvailable ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
+                      <Banknote className="w-5 h-5 mr-3 text-indigo-600" />
+                      <div>
+                        <div className="font-medium">Cash on Delivery</div>
+                        <div className="text-xs text-gray-500">
+                          {isCODAvailable ? 'Pay when you receive' : 'Only available for orders below ₹5000'}
+                        </div>
+                      </div>
                     </Label>
                   </div>
                 </div>
               </RadioGroup>
-
-              {paymentMethod === 'card' && (
-                <div className="mt-6 space-y-4">
-                  <div>
-                    <Label htmlFor="cardNumber">Card Number</Label>
-                    <Input
-                      id="cardNumber"
-                      placeholder="1234 5678 9012 3456"
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="expiry">Expiry Date</Label>
-                      <Input id="expiry" placeholder="MM/YY" required />
-                    </div>
-                    <div>
-                      <Label htmlFor="cvv">CVV</Label>
-                      <Input id="cvv" placeholder="123" type="password" maxLength={3} required />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="cardName">Cardholder Name</Label>
-                    <Input id="cardName" placeholder="John Doe" required />
-                  </div>
-                </div>
-              )}
-
-              {paymentMethod === 'upi' && (
-                <div className="mt-6">
-                  <Label htmlFor="upiId">UPI ID</Label>
-                  <Input
-                    id="upiId"
-                    placeholder="yourname@upi"
-                    required
-                  />
-                </div>
-              )}
             </Card>
           </div>
 
@@ -398,6 +463,7 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
           </div>
         </div>
       </form>
-    </div>
+      </div>
+    </>
   );
 }

@@ -5,6 +5,7 @@ import { ProductDetail } from './components/ProductDetail';
 import { Cart } from './components/Cart';
 import { Wishlist } from './components/Wishlist';
 import { Checkout } from './components/Checkout';
+import { PurchaseSuccess } from './components/PurchaseSuccess';
 import { OrderTracking } from './components/OrderTracking';
 import { UserProfile } from './components/UserProfile';
 import { AdminDashboard } from './components/AdminDashboard';
@@ -34,6 +35,7 @@ export default function App() {
   const [adminOrders, setAdminOrders] = useState<Order[]>([]);
   const [adminOrdersHydrated, setAdminOrdersHydrated] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
+  const [completedOrderId, setCompletedOrderId] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>(mockProducts); // start with mocks
   const [productsLoading, setProductsLoading] = useState<boolean>(true);
@@ -520,8 +522,8 @@ export default function App() {
       setCart([]);
       setBuyNowItems([]); // Clear buy now items
       setCartHydrated(false); // trigger re-hydration (cart cleared on server)
-      setCurrentPage('order-tracking');
-      setSelectedOrder(adaptedOrder.id);
+      setCompletedOrderId(adaptedOrder.id);
+      setCurrentPage('purchase-success');
     } catch (err: any) {
       console.error('Order creation failed:', err);
       alert(`Failed to place order: ${err.message || 'Unknown error'}`);
@@ -722,6 +724,20 @@ export default function App() {
             user={currentUser}
           />
         );
+      case 'purchase-success':
+        return completedOrderId ? (
+          <PurchaseSuccess
+            orderId={completedOrderId}
+            onTrackOrder={() => {
+              setSelectedOrder(completedOrderId);
+              setCurrentPage('order-tracking');
+            }}
+            onContinueShopping={() => {
+              setCompletedOrderId(null);
+              setCurrentPage('catalog');
+            }}
+          />
+        ) : null;
       case 'order-tracking':
         return (
           <OrderTracking
