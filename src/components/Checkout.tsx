@@ -16,7 +16,7 @@ declare global {
   }
 }
 
-const RAZORPAY_KEY = 'rzp_live_Bzuaj1lGfUylYf';
+const RAZORPAY_KEY = 'rzp_test_NgwEwXk1hnhpL6';
 
 interface CheckoutProps {
   items: CartItem[];

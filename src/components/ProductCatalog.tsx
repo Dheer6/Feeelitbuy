@@ -8,6 +8,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Checkbox } from './ui/checkbox';
+import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { formatINR } from '../lib/currency';
 
@@ -17,6 +18,7 @@ interface ProductCatalogProps {
   onViewProduct: (product: Product) => void;
   wishlist: string[];
   onToggleWishlist: (productId: string) => void;
+  onCategoryChange?: (category: string) => void;
 }
 
 export function ProductCatalog({
@@ -25,6 +27,7 @@ export function ProductCatalog({
   onViewProduct,
   wishlist,
   onToggleWishlist,
+  onCategoryChange,
 }: ProductCatalogProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('featured');
@@ -143,6 +146,9 @@ export function ProductCatalog({
     setSelectedMaterials([]);
     setSelectedColors([]);
     setSelectedRoomTypes([]);
+    if (onCategoryChange) {
+      onCategoryChange('all');
+    }
   };
 
   return (
@@ -208,6 +214,45 @@ export function ProductCatalog({
             </div>
 
             <div className="space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
+              {/* Category Filter */}
+              {onCategoryChange && (
+                <div className="pb-6 border-b">
+                  <Label className="mb-3 block font-semibold">Category</Label>
+                  <div className="space-y-2">
+                    <div className="flex items-center">
+                      <Checkbox
+                        id="cat-all"
+                        checked={category === 'all'}
+                        onCheckedChange={() => onCategoryChange('all')}
+                      />
+                      <label htmlFor="cat-all" className="ml-2 text-sm cursor-pointer">
+                        All Products
+                      </label>
+                    </div>
+                    <div className="flex items-center">
+                      <Checkbox
+                        id="cat-electronics"
+                        checked={category === 'electronics'}
+                        onCheckedChange={() => onCategoryChange('electronics')}
+                      />
+                      <label htmlFor="cat-electronics" className="ml-2 text-sm cursor-pointer">
+                        Electronics
+                      </label>
+                    </div>
+                    <div className="flex items-center">
+                      <Checkbox
+                        id="cat-furniture"
+                        checked={category === 'furniture'}
+                        onCheckedChange={() => onCategoryChange('furniture')}
+                      />
+                      <label htmlFor="cat-furniture" className="ml-2 text-sm cursor-pointer">
+                        Furniture
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Availability */}
               <div className="pb-6 border-b">
                 <Label className="mb-3 block font-semibold">Availability</Label>

@@ -656,6 +656,7 @@ export default function App() {
             onViewProduct={handleViewProduct}
             wishlist={wishlist}
             onToggleWishlist={toggleWishlist}
+            onCategoryChange={setSelectedCategory}
           />
         );
       case 'product-detail':
