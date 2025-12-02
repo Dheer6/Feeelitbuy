@@ -27,6 +27,7 @@ export default function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [buyNowItems, setBuyNowItems] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   // Admin-only full orders list
@@ -39,7 +40,6 @@ export default function App() {
   const [productsError, setProductsError] = useState<string | null>(null);
   const [cartHydrated, setCartHydrated] = useState(false);
   const [wishlistHydrated, setWishlistHydrated] = useState(false);
-  const [buyNowItems, setBuyNowItems] = useState<CartItem[]>([]);
   const [ordersHydrated, setOrdersHydrated] = useState(false);
 
   // Check for existing session on mount
@@ -95,11 +95,6 @@ export default function App() {
       subscription.unsubscribe();
     };
   }, []);
-
-  // Scroll to top whenever page changes
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [currentPage]);
 
   const checkUser = async () => {
     try {
@@ -320,20 +315,16 @@ export default function App() {
     const images = productImages.length
       ? productImages
           .sort((a: any, b: any) => {
-            // Sort by is_primary first, then display_order
+            // Sort by is_primary first, then by display_order
             if (a.is_primary && !b.is_primary) return -1;
             if (!a.is_primary && b.is_primary) return 1;
             return (a.display_order ?? 0) - (b.display_order ?? 0);
           })
           .map((pi: any) => pi.image_url)
-          .filter(Boolean) // Remove any null/undefined URLs
+          .filter(Boolean) // Filter out null/undefined URLs
       : base.image_url
         ? [base.image_url]
         : [PLACEHOLDER_IMAGE];
-    
-    // Ensure we have at least one image
-    const finalImages = images.length > 0 ? images : [PLACEHOLDER_IMAGE];
-    
     return {
       id: base.id,
       name: base.name || 'Unnamed Product',
@@ -343,15 +334,13 @@ export default function App() {
       category: 'electronics', // simplified until categories fully mapped
       subcategory: 'general',
       brand: base.brand || 'Generic',
-      images: finalImages,
+      images,
       specifications: base.specifications || {},
       stock: base.stock ?? 0,
-      lowStockThreshold: base.low_stock_threshold ?? 10,
       rating: base.rating || 0,
       reviewCount: base.reviews_count || 0,
       featured: !!base.is_featured,
       reviews: [],
-      product_images: productImages, // Keep the raw product_images for the Cart component
     };
   }
 
@@ -399,20 +388,6 @@ export default function App() {
         return [...prev, { product, quantity }];
       });
     }
-  };
-
-  const handleBuyNow = async (product: Product, quantity: number = 1) => {
-    if (!currentUser) {
-      setAuthMode('login');
-      setShowAuthModal(true);
-      return;
-    }
-    
-    // Set buy now items (only this product, not the entire cart)
-    setBuyNowItems([{ product, quantity }]);
-    
-    // Navigate directly to checkout
-    setCurrentPage('checkout');
   };
 
   const updateCartQuantity = async (productId: string, quantity: number) => {
@@ -500,7 +475,8 @@ export default function App() {
       }
 
       // Build order items
-      const orderItems = cart.map((item: CartItem) => ({
+      const itemsToOrder = buyNowItems.length > 0 ? buyNowItems : cart;
+      const orderItems = itemsToOrder.map((item: CartItem) => ({
         product_id: item.product.id,
         quantity: item.quantity,
         price: item.product.price,
@@ -514,39 +490,16 @@ export default function App() {
 
       const createdOrder = await orderService.createOrder(orderData);
 
-      // Decrement stock for each product in the order
+      // Automatically reserve stock for the order
       try {
-        const { productService } = await import('./lib/supabaseService');
-        for (const item of cart) {
-          const currentProduct = products.find(p => p.id === item.product.id);
-          if (currentProduct) {
-            const newStock = Math.max(0, currentProduct.stock - item.quantity);
-            await productService.updateProductStock(
-              item.product.id, 
-              newStock, 
-              currentProduct.lowStockThreshold
-            );
-          }
-        }
-        // Refresh products to show updated stock
-        if (onProductsChange) {
-          await handleProductsRefresh();
-        }
-      } catch (stockErr: any) {
-        console.error('Stock update failed:', stockErr);
-        // Order is created but stock not updated - admin should handle this
-      }
-
-      // Automatically reserve stock for the order (for inventory tracking)
-      try {
-        const stockItems = cart.map((item: CartItem) => ({
+        const stockItems = itemsToOrder.map((item: CartItem) => ({
           productId: item.product.id,
           quantity: item.quantity,
         }));
         await inventoryService.reserveStock(stockItems, createdOrder.id);
       } catch (stockErr: any) {
         console.error('Stock reservation failed:', stockErr);
-        // Non-fatal - stock already decremented above
+        // Order is created but stock not reserved - admin should handle this
       }
 
       // Record coupon usage if applied
@@ -565,8 +518,8 @@ export default function App() {
 
       setOrders((prev: Order[]) => [adaptedOrder, ...prev]);
       setCart([]);
-      setCartHydrated(false); // trigger re-hydration (cart cleared on server)
       setBuyNowItems([]); // Clear buy now items
+      setCartHydrated(false); // trigger re-hydration (cart cleared on server)
       setCurrentPage('order-tracking');
       setSelectedOrder(adaptedOrder.id);
     } catch (err: any) {
@@ -602,25 +555,6 @@ export default function App() {
       // Update order status to cancelled with the reason
       await orderService.updateOrderStatus(orderId, 'cancelled');
       
-      // Restore stock for cancelled order
-      const cancelledOrder = orders.find(o => o.id === orderId) || adminOrders.find(o => o.id === orderId);
-      if (cancelledOrder) {
-        const { productService } = await import('./lib/supabaseService');
-        for (const item of cancelledOrder.items) {
-          const currentProduct = products.find(p => p.id === item.product.id);
-          if (currentProduct) {
-            const newStock = currentProduct.stock + item.quantity;
-            await productService.updateProductStock(
-              item.product.id,
-              newStock,
-              currentProduct.lowStockThreshold
-            );
-          }
-        }
-        // Refresh products to show updated stock
-        await handleProductsRefresh();
-      }
-      
       // You could also save the cancellation reason to the database if needed
       // For now, we'll just log it
       console.log('Order cancelled. Reason:', reason);
@@ -635,7 +569,7 @@ export default function App() {
           order.id === orderId ? { ...order, status: 'cancelled' } : order
         )
       );
-      alert('Order cancelled successfully. Stock has been restored. Refund will be processed if payment was made.');
+      alert('Order cancelled successfully. Refund will be processed if payment was made.');
     } catch (err: any) {
       console.error('Failed to cancel order:', err);
       alert(`Failed to cancel order: ${err.message || 'Unknown error'}`);
@@ -675,8 +609,7 @@ export default function App() {
         `Return request submitted successfully!\n\n` +
         `Type: ${returnType === 'refund' ? 'Refund' : 'Replace'}\n` +
         `Amount: ₹${totalAmount.toLocaleString()}\n\n` +
-        `Our team will review your request within 24-48 hours.\n` +
-        `Stock will be restored when the return is approved.`
+        `Our team will review your request within 24-48 hours.`
       );
     } catch (err: any) {
       console.error('Failed to create return request:', err);
@@ -730,12 +663,35 @@ export default function App() {
           <ProductDetail
             product={selectedProduct}
             onAddToCart={addToCart}
-            onBuyNow={handleBuyNow}
+            onBuyNow={(product, quantity) => {
+              // Set buy now items as a separate cart
+              setBuyNowItems([{ product, quantity, itemId: `buy-now-${product.id}` }]);
+              if (currentUser) {
+                setCurrentPage('checkout');
+              } else {
+                setAuthMode('login');
+                setShowAuthModal(true);
+              }
+            }}
             onBack={() => setCurrentPage('catalog')}
             isWishlisted={wishlist.includes(selectedProduct.id)}
             onToggleWishlist={toggleWishlist}
           />
         ) : null;
+      case 'wishlist':
+        return (
+          <Wishlist
+            products={products}
+            wishlistIds={wishlist}
+            onRemoveFromWishlist={toggleWishlist}
+            onAddToCart={(product, quantity) => {
+              addToCart(product, quantity);
+              toggleWishlist(product.id); // Remove from wishlist after adding to cart
+            }}
+            onViewProduct={handleViewProduct}
+            onContinueShopping={() => setCurrentPage('catalog')}
+          />
+        );
       case 'cart':
         return (
           <Cart
@@ -743,11 +699,12 @@ export default function App() {
             onUpdateQuantity={updateCartQuantity}
             onRemove={removeFromCart}
             onCheckout={() => {
+              // Clear buy now items when checking out from cart
+              setBuyNowItems([]);
               if (!currentUser) {
                 setAuthMode('login');
                 setShowAuthModal(true);
               } else {
-                setBuyNowItems([]); // Clear buy now items when checking out from cart
                 setCurrentPage('checkout');
               }
             }}
@@ -755,26 +712,12 @@ export default function App() {
             onViewProduct={handleViewProduct}
           />
         );
-      case 'wishlist':
-        return (
-          <Wishlist
-            products={products}
-            wishlistIds={wishlist}
-            onRemoveFromWishlist={toggleWishlist}
-            onAddToCart={addToCart}
-            onViewProduct={handleViewProduct}
-            onContinueShopping={() => setCurrentPage('catalog')}
-          />
-        );
       case 'checkout':
         return (
           <Checkout
             items={buyNowItems.length > 0 ? buyNowItems : cart}
             onPlaceOrder={placeOrder}
-            onBack={() => {
-              setBuyNowItems([]);
-              setCurrentPage(buyNowItems.length > 0 ? 'catalog' : 'cart');
-            }}
+            onBack={() => setCurrentPage(buyNowItems.length > 0 ? 'product-detail' : 'cart')}
             user={currentUser}
           />
         );

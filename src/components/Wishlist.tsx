@@ -62,7 +62,7 @@ export function Wishlist({
           <Card key={product.id} className="group relative overflow-hidden hover:shadow-lg transition-shadow">
             {/* Remove button */}
             <button
-              onClick={(e) => {
+              onClick={(e: React.MouseEvent) => {
                 e.stopPropagation();
                 onRemoveFromWishlist(product.id);
               }}

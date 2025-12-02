@@ -64,226 +64,252 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancel
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     
-    // Add logo (if available, you can use base64 or URL)
-    // For now, we'll add company name in bold
-    doc.setFontSize(24);
-    doc.setFont('helvetica', 'bold');
-    doc.text('FEEL IT BUY', 20, 25);
+    // Helper function for PDF-safe currency formatting
+    const formatPdfPrice = (value: number): string => {
+      return `Rs. ${value.toFixed(2)}`;
+    };
     
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Feel the Quality, Buy with Confidence', 20, 32);
+    // Load and add logo
+    const logo = new Image();
+    logo.src = '/fib-logo.png';
+    logo.onload = () => {
+      try {
+        // Calculate aspect ratio for logo - keep it small
+        const logoWidth = 30;
+        const aspectRatio = logo.height / logo.width;
+        const logoHeight = logoWidth * aspectRatio;
+        // Add logo with proper aspect ratio
+        doc.addImage(logo, 'PNG', 20, 10, logoWidth, logoHeight);
+      } catch (e) {
+        // If logo fails, just add text
+        console.warn('Logo failed to load, using text instead');
+      }
+      
+      generateInvoiceContent();
+    };
     
-    // Company contact info
-    doc.setFontSize(9);
-    doc.text('Mumbai, Maharashtra, India', 20, 40);
-    doc.text('Email: support@feelitbuy.com', 20, 45);
-    doc.text('Phone: +91 12345 67890', 20, 50);
+    logo.onerror = () => {
+      // If logo doesn't exist, proceed without it
+      generateInvoiceContent();
+    };
     
-    // Invoice box on the right
-    doc.setFillColor(245, 245, 245);
-    doc.rect(130, 15, 60, 40, 'F');
-    doc.setLineWidth(0.5);
-    doc.rect(130, 15, 60, 40, 'S');
-    
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('INVOICE', 160, 25, { align: 'center' });
-    
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Invoice #: INV-${order.id.substring(0, 8).toUpperCase()}`, 135, 33);
-    doc.text(`Order ID: ${order.id.substring(0, 12)}`, 135, 38);
-    doc.text(`Date: ${new Date(order.createdAt).toLocaleDateString('en-IN')}`, 135, 43);
-    
-    // Payment status badge
-    const isPaid = order.paymentStatus === 'paid';
-    if (isPaid) {
-      doc.setFillColor(0, 0, 0);
-      doc.rect(135, 47, 35, 6, 'F');
-      doc.setTextColor(255, 255, 255);
-    } else {
-      doc.setFillColor(255, 255, 255);
-      doc.rect(135, 47, 35, 6, 'S');
+    const generateInvoiceContent = () => {
+      // Company name and tagline positioned after logo
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Feel the Quality, Buy with Confidence', 20, 32);
+      
+      // Company contact info
+      doc.setFontSize(9);
+      doc.text('Karkala, Karnataka, India', 20, 39);
+      doc.text('Email: support@feelitbuy.com', 20, 44);
+      doc.text('Phone: +91 12345 67890', 20, 49);
+      
+      // Invoice box on the right
+      doc.setFillColor(245, 245, 245);
+      doc.rect(130, 15, 60, 40, 'F');
+      doc.setLineWidth(0.5);
+      doc.rect(130, 15, 60, 40, 'S');
+      
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('INVOICE', 160, 25, { align: 'center' });
+      
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Invoice #: INV-${order.id.substring(0, 8).toUpperCase()}`, 135, 33);
+      doc.text(`Order ID: ${order.id.substring(0, 12)}`, 135, 38);
+      doc.text(`Date: ${new Date(order.createdAt).toLocaleDateString('en-IN')}`, 135, 43);
+      
+      // Payment status badge
+      const isPaid = order.paymentStatus === 'paid';
+      if (isPaid) {
+        doc.setFillColor(0, 0, 0);
+        doc.rect(135, 47, 35, 6, 'F');
+        doc.setTextColor(255, 255, 255);
+      } else {
+        doc.setFillColor(255, 255, 255);
+        doc.rect(135, 47, 35, 6, 'S');
+        doc.setTextColor(0, 0, 0);
+      }
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text(order.paymentStatus.toUpperCase(), 152.5, 51.5, { align: 'center' });
       doc.setTextColor(0, 0, 0);
-    }
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.text(order.paymentStatus.toUpperCase(), 152.5, 51.5, { align: 'center' });
-    doc.setTextColor(0, 0, 0);
-    
-    // Line separator
-    doc.setLineWidth(1);
-    doc.line(20, 60, 190, 60);
-    
-    // Invoice Details and Shipping Address boxes
-    doc.setLineWidth(0.5);
-    
-    // Invoice Details Box
-    doc.rect(20, 68, 80, 35, 'S');
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('INVOICE DETAILS', 25, 75);
-    doc.line(20, 77, 100, 77);
-    
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Customer: ${order.shippingAddress.name || 'Valued Customer'}`, 25, 83);
-    doc.text(`Order Date: ${new Date(order.createdAt).toLocaleDateString('en-IN')}`, 25, 88);
-    doc.text(`Payment: ${order.paymentMethod || 'Online Payment'}`, 25, 93);
-    doc.text(`Status: ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}`, 25, 98);
-    
-    // Shipping Address Box
-    doc.rect(110, 68, 80, 35, 'S');
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('SHIPPING ADDRESS', 115, 75);
-    doc.line(110, 77, 190, 77);
-    
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`${order.shippingAddress.name || 'Customer'}`, 115, 83);
-    doc.text(`${order.shippingAddress.street}`, 115, 88);
-    doc.text(`${order.shippingAddress.city}, ${order.shippingAddress.state}`, 115, 93);
-    doc.text(`${order.shippingAddress.zipCode}, ${order.shippingAddress.country}`, 115, 98);
-    
-    // Items Table
-    const tableStartY = 113;
-    const tableData = order.items.map(item => [
-      `${item.product.name}${item.product.brand ? `\n(${item.product.brand})` : ''}`,
-      item.quantity.toString(),
-      formatINR(item.product.price),
-      formatINR(item.product.price * item.quantity)
-    ]);
-    
-    autoTable(doc, {
-      startY: tableStartY,
-      head: [['ITEM DESCRIPTION', 'QTY', 'UNIT PRICE', 'AMOUNT']],
-      body: tableData,
-      theme: 'plain',
-      styles: {
-        fontSize: 9,
-        cellPadding: 3,
-        lineColor: [0, 0, 0],
-        lineWidth: 0.5,
-      },
-      headStyles: {
-        fillColor: [0, 0, 0],
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-        halign: 'left',
-      },
-      bodyStyles: {
-        textColor: [0, 0, 0],
-      },
-      alternateRowStyles: {
-        fillColor: [249, 249, 249],
-      },
-      columnStyles: {
-        0: { cellWidth: 85 },
-        1: { cellWidth: 20, halign: 'center' },
-        2: { cellWidth: 35, halign: 'right' },
-        3: { cellWidth: 35, halign: 'right', fontStyle: 'bold' },
-      },
-    });
-    
-    // Get Y position after table
-    const finalY = (doc as any).lastAutoTable.finalY || tableStartY + 40;
-    
-    // Summary Box
-    const summaryX = 130;
-    const summaryY = finalY + 10;
-    
-    doc.setLineWidth(0.5);
-    doc.rect(summaryX, summaryY, 60, 30, 'S');
-    
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Subtotal:', summaryX + 5, summaryY + 7);
-    doc.text(formatINR(order.total), summaryX + 55, summaryY + 7, { align: 'right' });
-    
-    doc.text('Tax (GST 18%):', summaryX + 5, summaryY + 13);
-    doc.text('Included', summaryX + 55, summaryY + 13, { align: 'right' });
-    
-    doc.text('Shipping:', summaryX + 5, summaryY + 19);
-    doc.text('FREE', summaryX + 55, summaryY + 19, { align: 'right' });
-    
-    doc.setLineWidth(1);
-    doc.line(summaryX, summaryY + 22, summaryX + 60, summaryY + 22);
-    
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text('TOTAL:', summaryX + 5, summaryY + 28);
-    doc.text(formatINR(order.total), summaryX + 55, summaryY + 28, { align: 'right' });
-    
-    // Terms & Conditions
-    const termsY = summaryY + 40;
-    doc.setFillColor(245, 245, 245);
-    doc.rect(20, termsY, 170, 20, 'F');
-    doc.setLineWidth(0.5);
-    doc.rect(20, termsY, 170, 20, 'S');
-    doc.setLineWidth(2);
-    doc.line(20, termsY, 20, termsY + 20);
-    
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.text('TERMS & CONDITIONS:', 25, termsY + 5);
-    
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text('• This is a computer-generated invoice and does not require a physical signature.', 25, termsY + 10);
-    doc.text('• Please retain this invoice for your records and warranty claims.', 25, termsY + 14);
-    doc.text('• For queries or support, contact us at support@feelitbuy.com or call +91 12345 67890.', 25, termsY + 18);
-    
-    // Signature Section
-    const sigY = termsY + 30;
-    
-    // Customer signature
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text('CUSTOMER ACKNOWLEDGEMENT', 40, sigY, { align: 'center' });
-    doc.setLineWidth(0.5);
-    doc.line(25, sigY + 15, 75, sigY + 15);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Signature', 50, sigY + 19, { align: 'center' });
-    doc.setFont('helvetica', 'normal');
-    doc.text('Date: _____________', 50, sigY + 23, { align: 'center' });
-    
-    // Authorized signature
-    doc.text('AUTHORIZED SIGNATORY', 160, sigY, { align: 'center' });
-    doc.line(135, sigY + 15, 185, sigY + 15);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Feel It Buy', 160, sigY + 19, { align: 'center' });
-    doc.setFont('helvetica', 'normal');
-    doc.text('Management', 160, sigY + 23, { align: 'center' });
-    
-    // Footer
-    const footerY = pageHeight - 25;
-    doc.setFillColor(245, 245, 245);
-    doc.rect(0, footerY, pageWidth, 25, 'F');
-    doc.setLineWidth(1);
-    doc.line(0, footerY, pageWidth, footerY);
-    
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text('THANK YOU FOR YOUR BUSINESS!', pageWidth / 2, footerY + 7, { align: 'center' });
-    
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Support: support@feelitbuy.com | Phone: +91 12345 67890', pageWidth / 2, footerY + 12, { align: 'center' });
-    doc.text('Visit: www.feelitbuy.com', pageWidth / 2, footerY + 16, { align: 'center' });
-    
-    doc.setFontSize(7);
-    doc.setTextColor(100, 100, 100);
-    doc.text(
-      `This invoice is computer generated and is valid without signature. | © ${new Date().getFullYear()} Feel It Buy. All Rights Reserved.`,
-      pageWidth / 2,
-      footerY + 21,
-      { align: 'center' }
-    );
-    
-    // Save the PDF
-    doc.save(`invoice-${order.id.substring(0, 8)}.pdf`);
+      
+      // Line separator
+      doc.setLineWidth(1);
+      doc.line(20, 60, 190, 60);
+      
+      // Invoice Details and Shipping Address boxes
+      doc.setLineWidth(0.5);
+      
+      // Invoice Details Box
+      doc.rect(20, 68, 80, 35, 'S');
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('INVOICE DETAILS', 25, 75);
+      doc.line(20, 77, 100, 77);
+      
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Customer: ${order.shippingAddress.name || 'Valued Customer'}`, 25, 83);
+      doc.text(`Order Date: ${new Date(order.createdAt).toLocaleDateString('en-IN')}`, 25, 88);
+      doc.text(`Payment: ${order.paymentMethod || 'Online Payment'}`, 25, 93);
+      doc.text(`Status: ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}`, 25, 98);
+      
+      // Shipping Address Box
+      doc.rect(110, 68, 80, 35, 'S');
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('SHIPPING ADDRESS', 115, 75);
+      doc.line(110, 77, 190, 77);
+      
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${order.shippingAddress.name || 'Customer'}`, 115, 83);
+      doc.text(`${order.shippingAddress.street}`, 115, 88);
+      doc.text(`${order.shippingAddress.city}, ${order.shippingAddress.state}`, 115, 93);
+      doc.text(`${order.shippingAddress.zipCode}, ${order.shippingAddress.country}`, 115, 98);
+      
+      // Items Table
+      const tableStartY = 113;
+      const tableData = order.items.map(item => [
+        `${item.product.name}${item.product.brand ? `\n(${item.product.brand})` : ''}`,
+        item.quantity.toString(),
+        formatPdfPrice(item.product.price),
+        formatPdfPrice(item.product.price * item.quantity)
+      ]);
+      
+      autoTable(doc, {
+        startY: tableStartY,
+        head: [['ITEM DESCRIPTION', 'QTY', 'UNIT PRICE', 'AMOUNT']],
+        body: tableData,
+        theme: 'plain',
+        styles: {
+          fontSize: 9,
+          cellPadding: 3,
+          lineColor: [0, 0, 0],
+          lineWidth: 0.5,
+        },
+        headStyles: {
+          fillColor: [0, 0, 0],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          halign: 'left',
+        },
+        bodyStyles: {
+          textColor: [0, 0, 0],
+        },
+        alternateRowStyles: {
+          fillColor: [249, 249, 249],
+        },
+        columnStyles: {
+          0: { cellWidth: 85 },
+          1: { cellWidth: 20, halign: 'center' },
+          2: { cellWidth: 35, halign: 'right' },
+          3: { cellWidth: 35, halign: 'right', fontStyle: 'bold' },
+        },
+      });
+      
+      // Get Y position after table
+      const finalY = (doc as any).lastAutoTable.finalY || tableStartY + 40;
+      
+      // Summary Box
+      const summaryX = 130;
+      const summaryY = finalY + 10;
+      
+      doc.setLineWidth(0.5);
+      doc.rect(summaryX, summaryY, 60, 30, 'S');
+      
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Subtotal:', summaryX + 5, summaryY + 7);
+      doc.text(formatPdfPrice(order.total), summaryX + 55, summaryY + 7, { align: 'right' });
+      
+      doc.text('Tax (GST 18%):', summaryX + 5, summaryY + 13);
+      doc.text('Included', summaryX + 55, summaryY + 13, { align: 'right' });
+      
+      doc.text('Shipping:', summaryX + 5, summaryY + 19);
+      doc.text('FREE', summaryX + 55, summaryY + 19, { align: 'right' });
+      
+      doc.setLineWidth(1);
+      doc.line(summaryX, summaryY + 22, summaryX + 60, summaryY + 22);
+      
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('TOTAL:', summaryX + 5, summaryY + 28);
+      doc.text(formatPdfPrice(order.total), summaryX + 55, summaryY + 28, { align: 'right' });
+      
+      // Terms & Conditions
+      const termsY = summaryY + 40;
+      doc.setFillColor(245, 245, 245);
+      doc.rect(20, termsY, 170, 20, 'F');
+      doc.setLineWidth(0.5);
+      doc.rect(20, termsY, 170, 20, 'S');
+      doc.setLineWidth(2);
+      doc.line(20, termsY, 20, termsY + 20);
+      
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('TERMS & CONDITIONS:', 25, termsY + 5);
+      
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text('• This is a computer-generated invoice and does not require a physical signature.', 25, termsY + 10);
+      doc.text('• Please retain this invoice for your records and warranty claims.', 25, termsY + 14);
+      doc.text('• For queries or support, contact us at support@feelitbuy.com or call +91 12345 67890.', 25, termsY + 18);
+      
+      // Signature Section
+      const sigY = termsY + 30;
+      
+      // Customer signature
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text('CUSTOMER ACKNOWLEDGEMENT', 40, sigY, { align: 'center' });
+      doc.setLineWidth(0.5);
+      doc.line(25, sigY + 15, 75, sigY + 15);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Signature', 50, sigY + 19, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
+      doc.text('Date: _____________', 50, sigY + 23, { align: 'center' });
+      
+      // Authorized signature
+      doc.text('AUTHORIZED SIGNATORY', 160, sigY, { align: 'center' });
+      doc.line(135, sigY + 15, 185, sigY + 15);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Feel It Buy', 160, sigY + 19, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
+      doc.text('Management', 160, sigY + 23, { align: 'center' });
+      
+      // Footer
+      const footerY = pageHeight - 25;
+      doc.setFillColor(245, 245, 245);
+      doc.rect(0, footerY, pageWidth, 25, 'F');
+      doc.setLineWidth(1);
+      doc.line(0, footerY, pageWidth, footerY);
+      
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('THANK YOU FOR YOUR BUSINESS!', pageWidth / 2, footerY + 7, { align: 'center' });
+      
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Support: support@feelitbuy.com | Phone: +91 12345 67890', pageWidth / 2, footerY + 12, { align: 'center' });
+      doc.text('Visit: www.feelitbuy.com', pageWidth / 2, footerY + 16, { align: 'center' });
+      
+      doc.setFontSize(7);
+      doc.setTextColor(100, 100, 100);
+      doc.text(
+        `This invoice is computer generated and is valid without signature. | © ${new Date().getFullYear()} Feel It Buy. All Rights Reserved.`,
+        pageWidth / 2,
+        footerY + 21,
+        { align: 'center' }
+      );
+      
+      // Save the PDF
+      doc.save(`invoice-${order.id.substring(0, 8)}.pdf`);
+    };
   };
 
   const getStatusColor = (status: Order['status']) => {

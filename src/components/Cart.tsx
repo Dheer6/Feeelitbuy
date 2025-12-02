@@ -17,25 +17,12 @@ interface CartProps {
 
 export function Cart({ items, onUpdateQuantity, onRemove, onCheckout, onContinueShopping, onViewProduct }: CartProps) {
 
-  // Ensure each product has images array mapped from product_images
-  const mappedItems = items.map(item => {
-    const product = { ...item.product };
-    if (product.product_images && Array.isArray(product.product_images) && product.product_images.length > 0) {
-      product.images = product.product_images.map(img => img.image_url);
-    } else if (product.image_url) {
-      product.images = [product.image_url];
-    } else {
-      product.images = [];
-    }
-    return { ...item, product };
-  });
-
-  const subtotal = mappedItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const shipping = subtotal > 500 ? 0 : 25;
   const tax = subtotal * 0.18;
   const total = subtotal + shipping + tax;
 
-  if (mappedItems.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="container mx-auto px-4 py-16">
         <Card className="max-w-md mx-auto p-12 text-center">
@@ -52,12 +39,12 @@ export function Cart({ items, onUpdateQuantity, onRemove, onCheckout, onContinue
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="mb-8">Shopping Cart ({mappedItems.length} items)</h1>
+      <h1 className="mb-8">Shopping Cart ({items.length} items)</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Cart Items */}
         <div className="lg:col-span-2 space-y-4">
-          {mappedItems.map((item) => (
+          {items.map((item) => (
             <Card key={item.product.id} className="p-4">
               <div className="flex gap-4">
                 <div
