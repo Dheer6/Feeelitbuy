@@ -1,15 +1,17 @@
-import { Home, Package, ShoppingCart, User } from 'lucide-react';
+import { Home, Package, ShoppingCart, Heart, User } from 'lucide-react';
 
 interface MobileBottomNavProps {
   currentPage: string;
   cartItemCount: number;
+  wishlistCount: number;
   onNavigate: (page: string) => void;
 }
 
-export function MobileBottomNav({ currentPage, cartItemCount, onNavigate }: MobileBottomNavProps) {
+export function MobileBottomNav({ currentPage, cartItemCount, wishlistCount, onNavigate }: MobileBottomNavProps) {
   const navItems = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'catalog', label: 'Products', icon: Package },
+    { id: 'wishlist', label: 'Wishlist', icon: Heart, badge: wishlistCount },
     { id: 'cart', label: 'Cart', icon: ShoppingCart, badge: cartItemCount },
     { id: 'profile', label: 'Profile', icon: User },
   ];

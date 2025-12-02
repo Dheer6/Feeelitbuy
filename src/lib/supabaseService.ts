@@ -172,6 +172,24 @@ export const productService = {
 
     if (error) throw error;
   },
+
+  // Update product stock (admin only)
+  async updateProductStock(id: string, stock: number, lowStockThreshold?: number) {
+    const updates: any = { stock };
+    if (lowStockThreshold !== undefined) {
+      updates.low_stock_threshold = lowStockThreshold;
+    }
+
+    const { data, error } = await supabase
+      .from('products')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as Product;
+  },
 };
 
 // ==================== CATEGORY SERVICES ====================

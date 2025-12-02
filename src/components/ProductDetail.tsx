@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Heart, Minus, Plus, ShoppingCart, Star, Truck, Shield, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Heart, Minus, Plus, ShoppingCart, Star, Truck, Shield, RotateCcw, AlertTriangle, Package, Zap } from 'lucide-react';
 import { Product } from '../types';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
+import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { formatINR } from '../lib/currency';
@@ -10,6 +11,7 @@ import { formatINR } from '../lib/currency';
 interface ProductDetailProps {
   product: Product;
   onAddToCart: (product: Product, quantity: number) => void;
+  onBuyNow: (product: Product, quantity: number) => void;
   onBack: () => void;
   isWishlisted: boolean;
   onToggleWishlist: (productId: string) => void;
@@ -18,6 +20,7 @@ interface ProductDetailProps {
 export function ProductDetail({
   product,
   onAddToCart,
+  onBuyNow,
   onBack,
   isWishlisted,
   onToggleWishlist,
@@ -52,6 +55,10 @@ export function ProductDetail({
   const handleAddToCart = () => {
     onAddToCart(product, quantity);
     alert(`Added ${quantity} ${product.name} to cart!`);
+  };
+
+  const handleBuyNow = () => {
+    onBuyNow(product, quantity);
   };
 
   return (
@@ -134,12 +141,24 @@ export function ProductDetail({
 
           {/* Stock Status */}
           <div className="mb-6">
-            {product.stock > 0 ? (
-              <p className="text-green-600">
-                ✓ In Stock ({product.stock} available)
-              </p>
+            {product.stock === 0 ? (
+              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-sm py-2 px-4">
+                <Package className="w-4 h-4 mr-2" />
+                Out of Stock - Currently Unavailable
+              </Badge>
+            ) : product.stock <= (product.lowStockThreshold || 10) ? (
+              <div className="space-y-2">
+                <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-sm py-2 px-4">
+                  <AlertTriangle className="w-4 h-4 mr-2" />
+                  Limited Stock - Only {product.stock} left!
+                </Badge>
+                <p className="text-sm text-orange-600">Order soon before it's gone!</p>
+              </div>
             ) : (
-              <p className="text-red-600">Out of Stock</p>
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-sm py-2 px-4">
+                <Package className="w-4 h-4 mr-2" />
+                In Stock - {product.stock} available
+              </Badge>
             )}
           </div>
 
@@ -150,43 +169,58 @@ export function ProductDetail({
               <div className="flex items-center border border-gray-300 rounded-lg">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="p-2 hover:bg-gray-100"
-                  disabled={quantity <= 1}
+                  className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={quantity <= 1 || product.stock === 0}
                 >
                   <Minus className="w-4 h-4" />
                 </button>
                 <span className="px-4 py-2 min-w-[60px] text-center">{quantity}</span>
                 <button
                   onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                  className="p-2 hover:bg-gray-100"
-                  disabled={quantity >= product.stock}
+                  className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={quantity >= product.stock || product.stock === 0}
                 >
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
+              {product.stock > 0 && (
+                <span className="text-sm text-gray-600">Max: {product.stock}</span>
+              )}
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 mb-8">
+          <div className="space-y-3 mb-8">
             <Button
-              className="flex-1"
+              className="w-full !bg-orange-600 !hover:bg-orange-700 text-white"
               size="lg"
-              onClick={handleAddToCart}
+              onClick={handleBuyNow}
               disabled={product.stock === 0}
             >
-              <ShoppingCart className="w-5 h-5 mr-2" />
-              Add to Cart
+              <Zap className="w-5 h-5 mr-2" />
+              Buy Now
             </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => onToggleWishlist(product.id)}
-            >
-              <Heart
-                className={`w-5 h-5 ${isWishlisted ? 'fill-red-500 text-red-500' : ''}`}
-              />
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                className="flex-1"
+                size="lg"
+                variant="outline"
+                onClick={handleAddToCart}
+                disabled={product.stock === 0}
+              >
+                <ShoppingCart className="w-5 h-5 mr-2" />
+                Add to Cart
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => onToggleWishlist(product.id)}
+              >
+                <Heart
+                  className={`w-5 h-5 ${isWishlisted ? 'fill-red-500 text-red-500' : ''}`}
+                />
+              </Button>
+            </div>
           </div>
 
           {/* Benefits */}

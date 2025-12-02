@@ -89,7 +89,7 @@ export function Header({
           <div className="flex items-center gap-3">
             {/* Wishlist */}
             <button
-              onClick={() => onNavigate('catalog')}
+              onClick={() => onNavigate('wishlist')}
               className="relative p-2 text-gray-700 hover:text-indigo-600 hover:bg-gray-50 rounded-lg transition-colors"
             >
               <Heart className="w-5 h-5" />

@@ -1,7 +1,8 @@
-import { ShoppingBag, Trash2, Plus, Minus } from 'lucide-react';
+import { ShoppingBag, Trash2, Plus, Minus, AlertTriangle, Package } from 'lucide-react';
 import { CartItem } from '../types';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
+import { Badge } from './ui/badge';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { formatINR } from '../lib/currency';
 
@@ -76,9 +77,26 @@ export function Cart({ items, onUpdateQuantity, onRemove, onCheckout, onContinue
                         {item.product.name}
                       </h3>
                       <p className="text-indigo-600 text-sm mb-2">{item.product.brand}</p>
-                      <p className="text-gray-600 mb-3">
+                      <p className="text-gray-600 mb-2">
                         {formatINR(item.product.price)} each
                       </p>
+                      {/* Stock warnings */}
+                      {item.product.stock === 0 ? (
+                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs">
+                          <Package className="w-3 h-3 mr-1" />
+                          Out of Stock
+                        </Badge>
+                      ) : item.product.stock < item.quantity ? (
+                        <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-xs">
+                          <AlertTriangle className="w-3 h-3 mr-1" />
+                          Only {item.product.stock} available
+                        </Badge>
+                      ) : item.product.stock <= (item.product.lowStockThreshold || 10) ? (
+                        <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-xs">
+                          <AlertTriangle className="w-3 h-3 mr-1" />
+                          Limited stock
+                        </Badge>
+                      ) : null}
                     </div>
                     <button
                       onClick={() => onRemove(item.product.id)}
@@ -87,23 +105,28 @@ export function Cart({ items, onUpdateQuantity, onRemove, onCheckout, onContinue
                       <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center border border-gray-300 rounded-lg">
-                      <button
-                        onClick={() => onUpdateQuantity(item.product.id, item.quantity - 1)}
-                        className="p-2 hover:bg-gray-100"
-                        disabled={item.quantity <= 1}
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <span className="px-4 py-2 min-w-[60px] text-center">{item.quantity}</span>
-                      <button
-                        onClick={() => onUpdateQuantity(item.product.id, item.quantity + 1)}
-                        className="p-2 hover:bg-gray-100"
-                        disabled={item.quantity >= item.product.stock}
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
+                  <div className="flex items-center justify-between mt-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center border border-gray-300 rounded-lg">
+                        <button
+                          onClick={() => onUpdateQuantity(item.product.id, item.quantity - 1)}
+                          className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={item.quantity <= 1 || item.product.stock === 0}
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="px-4 py-2 min-w-[60px] text-center">{item.quantity}</span>
+                        <button
+                          onClick={() => onUpdateQuantity(item.product.id, item.quantity + 1)}
+                          className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={item.quantity >= item.product.stock || item.product.stock === 0}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                      {item.product.stock > 0 && (
+                        <span className="text-xs text-gray-500">Max: {item.product.stock}</span>
+                      )}
                     </div>
                     <div className="text-right">
                       <p className="text-gray-500 text-sm">Subtotal</p>

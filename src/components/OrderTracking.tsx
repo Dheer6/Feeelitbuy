@@ -7,17 +7,23 @@ import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { formatINR } from '../lib/currency';
+import { ReturnDialog } from './ReturnDialog';
+import { CancelOrderDialog } from './CancelOrderDialog';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface OrderTrackingProps {
   orders: Order[];
   selectedOrderId: string | null;
   onSelectOrder: (orderId: string) => void;
-  onCancelOrder?: (orderId: string) => void;
-  onReturnOrder?: (orderId: string) => void;
+  onCancelOrder?: (orderId: string, reason: string) => void;
+  onSubmitReturn?: (orderId: string, returnType: 'refund' | 'replace', reason: string, items: any[]) => Promise<void>;
 }
 
-export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancelOrder, onReturnOrder }: OrderTrackingProps) {
+export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancelOrder, onSubmitReturn }: OrderTrackingProps) {
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [showReturnDialog, setShowReturnDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   const selectedOrder = orders.find((o) => o.id === selectedOrderId) || orders[0];
 
@@ -32,460 +38,252 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancel
     return order.status === 'delivered';
   };
 
-  const handleCancelOrder = (orderId: string) => {
-    if (window.confirm('Are you sure you want to cancel this order?')) {
-      onCancelOrder?.(orderId);
-    }
+  const handleCancelOrder = () => {
+    setShowCancelDialog(true);
   };
 
-  const handleReturnOrder = (orderId: string) => {
-    if (window.confirm('Are you sure you want to return this order? A return request will be created.')) {
-      onReturnOrder?.(orderId);
+  const handleSubmitCancel = async (orderId: string, reason: string) => {
+    if (onCancelOrder) {
+      onCancelOrder(orderId, reason);
+    }
+    setShowCancelDialog(false);
+  };
+
+  const handleReturnOrder = () => {
+    setShowReturnDialog(true);
+  };
+
+  const handleSubmitReturn = async (returnType: 'refund' | 'replace', reason: string, items: any[]) => {
+    if (selectedOrder && onSubmitReturn) {
+      await onSubmitReturn(selectedOrder.id, returnType, reason, items);
     }
   };
 
   const downloadInvoice = (order: Order) => {
-    // Generate professional invoice HTML
-    const invoiceHTML = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>Invoice - ${order.id}</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            max-width: 900px; 
-            margin: 0 auto; 
-            padding: 40px 30px; 
-            background: #ffffff;
-            color: #333;
-            line-height: 1.6;
-          }
-          
-          /* Header Section */
-          .invoice-header { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: flex-start;
-            margin-bottom: 40px; 
-            padding-bottom: 30px; 
-            border-bottom: 3px solid #4F46E5; 
-          }
-          .company-info {
-            flex: 1;
-          }
-          .logo-container {
-            margin-bottom: 15px;
-          }
-          .logo {
-            max-width: 180px;
-            height: auto;
-          }
-          .company-name { 
-            font-size: 32px; 
-            font-weight: bold; 
-            color: #4F46E5; 
-            margin-bottom: 8px; 
-          }
-          .company-tagline {
-            color: #666;
-            font-size: 14px;
-            font-style: italic;
-            margin-bottom: 12px;
-          }
-          .company-contact {
-            font-size: 13px;
-            color: #555;
-            line-height: 1.8;
-          }
-          .company-contact p {
-            margin: 4px 0;
-          }
-          
-          .invoice-meta {
-            text-align: right;
-            background: #F3F4F6;
-            padding: 20px;
-            border-radius: 8px;
-            min-width: 280px;
-          }
-          .invoice-title { 
-            font-size: 28px; 
-            font-weight: bold;
-            color: #1F2937;
-            margin-bottom: 15px;
-            letter-spacing: 1px;
-          }
-          .invoice-meta p {
-            margin: 6px 0;
-            font-size: 14px;
-          }
-          .invoice-meta strong {
-            color: #4F46E5;
-            font-weight: 600;
-          }
-          
-          /* Details Section */
-          .details-container { 
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 40px; 
-          }
-          .details-box {
-            background: #F9FAFB;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid #4F46E5;
-          }
-          .details-box h3 { 
-            font-size: 16px; 
-            color: #4F46E5; 
-            margin-bottom: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-          }
-          .details-box p {
-            margin: 6px 0;
-            font-size: 14px;
-            color: #374151;
-          }
-          .details-box strong {
-            color: #1F2937;
-            font-weight: 600;
-            display: inline-block;
-            min-width: 120px;
-          }
-          
-          /* Table Styles */
-          .table-wrapper {
-            margin: 30px 0;
-            overflow-x: auto;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            border-radius: 8px;
-          }
-          table { 
-            width: 100%; 
-            border-collapse: collapse;
-            background: white;
-          }
-          thead {
-            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
-          }
-          th { 
-            padding: 16px 12px; 
-            text-align: left; 
-            color: white;
-            font-weight: 600;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-          }
-          td { 
-            padding: 14px 12px; 
-            border-bottom: 1px solid #E5E7EB;
-            font-size: 14px;
-            color: #374151;
-          }
-          tbody tr:hover {
-            background-color: #F9FAFB;
-          }
-          tbody tr:last-child td {
-            border-bottom: none;
-          }
-          
-          /* Summary Section */
-          .summary-section {
-            margin-top: 30px;
-            display: flex;
-            justify-content: flex-end;
-          }
-          .summary-box {
-            min-width: 350px;
-            background: #F9FAFB;
-            padding: 20px;
-            border-radius: 8px;
-            border: 2px solid #E5E7EB;
-          }
-          .summary-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            font-size: 14px;
-            color: #374151;
-          }
-          .summary-row.subtotal {
-            border-bottom: 1px solid #D1D5DB;
-          }
-          .summary-row.total {
-            font-size: 18px;
-            font-weight: bold;
-            color: #1F2937;
-            padding-top: 12px;
-            border-top: 2px solid #4F46E5;
-            margin-top: 8px;
-          }
-          .summary-row.total .amount {
-            color: #4F46E5;
-            font-size: 22px;
-          }
-          
-          /* Notes Section */
-          .notes-section {
-            margin: 40px 0 30px 0;
-            padding: 20px;
-            background: #FEF3C7;
-            border-left: 4px solid #F59E0B;
-            border-radius: 4px;
-          }
-          .notes-section h4 {
-            color: #92400E;
-            margin-bottom: 8px;
-            font-size: 14px;
-            font-weight: 600;
-          }
-          .notes-section p {
-            color: #78350F;
-            font-size: 13px;
-          }
-          
-          /* Signature Section */
-          .signature-section {
-            margin-top: 60px;
-            display: flex;
-            justify-content: space-between;
-            padding-top: 30px;
-            border-top: 2px solid #E5E7EB;
-          }
-          .signature-box {
-            text-align: center;
-            min-width: 250px;
-          }
-          .signature-line {
-            width: 200px;
-            margin: 40px auto 10px auto;
-            border-top: 2px solid #374151;
-          }
-          .signature-label {
-            font-size: 13px;
-            color: #6B7280;
-            margin-top: 8px;
-          }
-          .signature-name {
-            font-weight: 600;
-            color: #1F2937;
-            font-size: 15px;
-            margin-top: 4px;
-          }
-          .signature-designation {
-            font-size: 12px;
-            color: #9CA3AF;
-            font-style: italic;
-          }
-          
-          /* Footer */
-          .footer { 
-            margin-top: 50px; 
-            text-align: center; 
-            padding-top: 25px; 
-            border-top: 2px solid #E5E7EB;
-          }
-          .footer-thank-you {
-            font-size: 16px;
-            color: #4F46E5;
-            font-weight: 600;
-            margin-bottom: 12px;
-          }
-          .footer-contact {
-            color: #6B7280; 
-            font-size: 13px;
-            margin: 6px 0;
-          }
-          .footer-legal {
-            margin-top: 15px;
-            font-size: 11px;
-            color: #9CA3AF;
-          }
-          
-          /* Payment Status Badge */
-          .payment-status {
-            display: inline-block;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-top: 8px;
-          }
-          .payment-status.paid {
-            background: #D1FAE5;
-            color: #065F46;
-          }
-          .payment-status.pending {
-            background: #FEF3C7;
-            color: #92400E;
-          }
-          
-          @media print {
-            body { padding: 20px; }
-            .no-print { display: none; }
-          }
-        </style>
-      </head>
-      <body>
-        <!-- Header with Logo and Invoice Info -->
-        <div class="invoice-header">
-          <div class="company-info">
-            <div class="logo-container">
-              <img src="/fib-logo.png" alt="Feel It Buy Logo" class="logo" />
-            </div>
-            <div class="company-tagline">Your Trusted Shopping Destination</div>
-            <div class="company-contact">
-              <p>📍 Mumbai, Maharashtra, India</p>
-              <p>📧 support@feelitbuy.com</p>
-              <p>📞 +91 12345 67890</p>
-              <p>🌐 www.feelitbuy.com</p>
-            </div>
-          </div>
-          
-          <div class="invoice-meta">
-            <div class="invoice-title">INVOICE</div>
-            <p><strong>Invoice #:</strong> INV-${order.id.substring(0, 8).toUpperCase()}</p>
-            <p><strong>Order ID:</strong> ${order.id.substring(0, 12)}</p>
-            <p><strong>Date:</strong> ${new Date(order.createdAt).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })}</p>
-            <div class="payment-status ${order.paymentStatus === 'paid' ? 'paid' : 'pending'}">
-              ${order.paymentStatus.toUpperCase()}
-            </div>
-          </div>
-        </div>
-        
-        <!-- Bill To and Ship To Details -->
-        <div class="details-container">
-          <div class="details-box">
-            <h3>📋 Invoice Details</h3>
-            <p><strong>Customer Name:</strong> ${order.shippingAddress.name || 'Valued Customer'}</p>
-            <p><strong>Order Date:</strong> ${new Date(order.createdAt).toLocaleDateString('en-IN')}</p>
-            <p><strong>Payment Method:</strong> ${order.paymentMethod || 'Online Payment'}</p>
-            <p><strong>Status:</strong> ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}</p>
-          </div>
-          
-          <div class="details-box">
-            <h3>🚚 Shipping Address</h3>
-            <p><strong>Name:</strong> ${order.shippingAddress.name || 'Customer'}</p>
-            <p>${order.shippingAddress.street}</p>
-            <p>${order.shippingAddress.city}, ${order.shippingAddress.state}</p>
-            <p>${order.shippingAddress.zipCode}</p>
-            <p>${order.shippingAddress.country}</p>
-          </div>
-        </div>
-
-        <!-- Items Table -->
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th style="width: 50%;">Item Description</th>
-                <th style="width: 15%; text-align: center;">Qty</th>
-                <th style="width: 17.5%; text-align: right;">Unit Price</th>
-                <th style="width: 17.5%; text-align: right;">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${order.items.map(item => `
-                <tr>
-                  <td>
-                    <strong>${item.product.name}</strong>
-                    ${item.product.brand ? `<br><small style="color: #6B7280;">Brand: ${item.product.brand}</small>` : ''}
-                  </td>
-                  <td style="text-align: center;">${item.quantity}</td>
-                  <td style="text-align: right;">${formatINR(item.product.price)}</td>
-                  <td style="text-align: right;"><strong>${formatINR(item.product.price * item.quantity)}</strong></td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Summary Section -->
-        <div class="summary-section">
-          <div class="summary-box">
-            <div class="summary-row subtotal">
-              <span>Subtotal:</span>
-              <span>${formatINR(order.total)}</span>
-            </div>
-            <div class="summary-row">
-              <span>Tax (included):</span>
-              <span>${formatINR(0)}</span>
-            </div>
-            <div class="summary-row">
-              <span>Shipping:</span>
-              <span>FREE</span>
-            </div>
-            <div class="summary-row total">
-              <span>Grand Total:</span>
-              <span class="amount">${formatINR(order.total)}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Notes -->
-        <div class="notes-section">
-          <h4>💡 Important Notes:</h4>
-          <p>• This is a computer-generated invoice and does not require a physical signature.</p>
-          <p>• Please retain this invoice for your records and warranty claims.</p>
-          <p>• For any queries or support, contact us at support@feelitbuy.com</p>
-        </div>
-
-        <!-- Signature Section -->
-        <div class="signature-section">
-          <div class="signature-box">
-            <div class="signature-label">Customer Acknowledgement</div>
-            <div class="signature-line"></div>
-            <div class="signature-name">Signature</div>
-            <div class="signature-designation">Date: _____________</div>
-          </div>
-          
-          <div class="signature-box">
-            <div class="signature-label">Authorized Signatory</div>
-            <div class="signature-line"></div>
-            <div class="signature-name">Feel It Buy Management</div>
-            <div class="signature-designation">Director & Owner</div>
-          </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="footer">
-          <div class="footer-thank-you">Thank you for shopping with Feel It Buy!</div>
-          <p class="footer-contact">For support: support@feelitbuy.com | +91 12345 67890</p>
-          <p class="footer-contact">Visit us at www.feelitbuy.com</p>
-          <p class="footer-legal">
-            This invoice is generated electronically and is valid without signature. | 
-            Terms & Conditions Apply | 
-            © ${new Date().getFullYear()} Feel It Buy. All rights reserved.
-          </p>
-        </div>
-      </body>
-      </html>
-    `;
-
-    // Create blob and download
-    const blob = new Blob([invoiceHTML], { type: 'text/html' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `invoice-${order.id.substring(0, 8)}.html`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    
+    // Add logo (if available, you can use base64 or URL)
+    // For now, we'll add company name in bold
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.text('FEEL IT BUY', 20, 25);
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Feel the Quality, Buy with Confidence', 20, 32);
+    
+    // Company contact info
+    doc.setFontSize(9);
+    doc.text('Mumbai, Maharashtra, India', 20, 40);
+    doc.text('Email: support@feelitbuy.com', 20, 45);
+    doc.text('Phone: +91 12345 67890', 20, 50);
+    
+    // Invoice box on the right
+    doc.setFillColor(245, 245, 245);
+    doc.rect(130, 15, 60, 40, 'F');
+    doc.setLineWidth(0.5);
+    doc.rect(130, 15, 60, 40, 'S');
+    
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('INVOICE', 160, 25, { align: 'center' });
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Invoice #: INV-${order.id.substring(0, 8).toUpperCase()}`, 135, 33);
+    doc.text(`Order ID: ${order.id.substring(0, 12)}`, 135, 38);
+    doc.text(`Date: ${new Date(order.createdAt).toLocaleDateString('en-IN')}`, 135, 43);
+    
+    // Payment status badge
+    const isPaid = order.paymentStatus === 'paid';
+    if (isPaid) {
+      doc.setFillColor(0, 0, 0);
+      doc.rect(135, 47, 35, 6, 'F');
+      doc.setTextColor(255, 255, 255);
+    } else {
+      doc.setFillColor(255, 255, 255);
+      doc.rect(135, 47, 35, 6, 'S');
+      doc.setTextColor(0, 0, 0);
+    }
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text(order.paymentStatus.toUpperCase(), 152.5, 51.5, { align: 'center' });
+    doc.setTextColor(0, 0, 0);
+    
+    // Line separator
+    doc.setLineWidth(1);
+    doc.line(20, 60, 190, 60);
+    
+    // Invoice Details and Shipping Address boxes
+    doc.setLineWidth(0.5);
+    
+    // Invoice Details Box
+    doc.rect(20, 68, 80, 35, 'S');
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('INVOICE DETAILS', 25, 75);
+    doc.line(20, 77, 100, 77);
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Customer: ${order.shippingAddress.name || 'Valued Customer'}`, 25, 83);
+    doc.text(`Order Date: ${new Date(order.createdAt).toLocaleDateString('en-IN')}`, 25, 88);
+    doc.text(`Payment: ${order.paymentMethod || 'Online Payment'}`, 25, 93);
+    doc.text(`Status: ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}`, 25, 98);
+    
+    // Shipping Address Box
+    doc.rect(110, 68, 80, 35, 'S');
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('SHIPPING ADDRESS', 115, 75);
+    doc.line(110, 77, 190, 77);
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${order.shippingAddress.name || 'Customer'}`, 115, 83);
+    doc.text(`${order.shippingAddress.street}`, 115, 88);
+    doc.text(`${order.shippingAddress.city}, ${order.shippingAddress.state}`, 115, 93);
+    doc.text(`${order.shippingAddress.zipCode}, ${order.shippingAddress.country}`, 115, 98);
+    
+    // Items Table
+    const tableStartY = 113;
+    const tableData = order.items.map(item => [
+      `${item.product.name}${item.product.brand ? `\n(${item.product.brand})` : ''}`,
+      item.quantity.toString(),
+      formatINR(item.product.price),
+      formatINR(item.product.price * item.quantity)
+    ]);
+    
+    autoTable(doc, {
+      startY: tableStartY,
+      head: [['ITEM DESCRIPTION', 'QTY', 'UNIT PRICE', 'AMOUNT']],
+      body: tableData,
+      theme: 'plain',
+      styles: {
+        fontSize: 9,
+        cellPadding: 3,
+        lineColor: [0, 0, 0],
+        lineWidth: 0.5,
+      },
+      headStyles: {
+        fillColor: [0, 0, 0],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        halign: 'left',
+      },
+      bodyStyles: {
+        textColor: [0, 0, 0],
+      },
+      alternateRowStyles: {
+        fillColor: [249, 249, 249],
+      },
+      columnStyles: {
+        0: { cellWidth: 85 },
+        1: { cellWidth: 20, halign: 'center' },
+        2: { cellWidth: 35, halign: 'right' },
+        3: { cellWidth: 35, halign: 'right', fontStyle: 'bold' },
+      },
+    });
+    
+    // Get Y position after table
+    const finalY = (doc as any).lastAutoTable.finalY || tableStartY + 40;
+    
+    // Summary Box
+    const summaryX = 130;
+    const summaryY = finalY + 10;
+    
+    doc.setLineWidth(0.5);
+    doc.rect(summaryX, summaryY, 60, 30, 'S');
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Subtotal:', summaryX + 5, summaryY + 7);
+    doc.text(formatINR(order.total), summaryX + 55, summaryY + 7, { align: 'right' });
+    
+    doc.text('Tax (GST 18%):', summaryX + 5, summaryY + 13);
+    doc.text('Included', summaryX + 55, summaryY + 13, { align: 'right' });
+    
+    doc.text('Shipping:', summaryX + 5, summaryY + 19);
+    doc.text('FREE', summaryX + 55, summaryY + 19, { align: 'right' });
+    
+    doc.setLineWidth(1);
+    doc.line(summaryX, summaryY + 22, summaryX + 60, summaryY + 22);
+    
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('TOTAL:', summaryX + 5, summaryY + 28);
+    doc.text(formatINR(order.total), summaryX + 55, summaryY + 28, { align: 'right' });
+    
+    // Terms & Conditions
+    const termsY = summaryY + 40;
+    doc.setFillColor(245, 245, 245);
+    doc.rect(20, termsY, 170, 20, 'F');
+    doc.setLineWidth(0.5);
+    doc.rect(20, termsY, 170, 20, 'S');
+    doc.setLineWidth(2);
+    doc.line(20, termsY, 20, termsY + 20);
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('TERMS & CONDITIONS:', 25, termsY + 5);
+    
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('• This is a computer-generated invoice and does not require a physical signature.', 25, termsY + 10);
+    doc.text('• Please retain this invoice for your records and warranty claims.', 25, termsY + 14);
+    doc.text('• For queries or support, contact us at support@feelitbuy.com or call +91 12345 67890.', 25, termsY + 18);
+    
+    // Signature Section
+    const sigY = termsY + 30;
+    
+    // Customer signature
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('CUSTOMER ACKNOWLEDGEMENT', 40, sigY, { align: 'center' });
+    doc.setLineWidth(0.5);
+    doc.line(25, sigY + 15, 75, sigY + 15);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Signature', 50, sigY + 19, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.text('Date: _____________', 50, sigY + 23, { align: 'center' });
+    
+    // Authorized signature
+    doc.text('AUTHORIZED SIGNATORY', 160, sigY, { align: 'center' });
+    doc.line(135, sigY + 15, 185, sigY + 15);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Feel It Buy', 160, sigY + 19, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.text('Management', 160, sigY + 23, { align: 'center' });
+    
+    // Footer
+    const footerY = pageHeight - 25;
+    doc.setFillColor(245, 245, 245);
+    doc.rect(0, footerY, pageWidth, 25, 'F');
+    doc.setLineWidth(1);
+    doc.line(0, footerY, pageWidth, footerY);
+    
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('THANK YOU FOR YOUR BUSINESS!', pageWidth / 2, footerY + 7, { align: 'center' });
+    
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Support: support@feelitbuy.com | Phone: +91 12345 67890', pageWidth / 2, footerY + 12, { align: 'center' });
+    doc.text('Visit: www.feelitbuy.com', pageWidth / 2, footerY + 16, { align: 'center' });
+    
+    doc.setFontSize(7);
+    doc.setTextColor(100, 100, 100);
+    doc.text(
+      `This invoice is computer generated and is valid without signature. | © ${new Date().getFullYear()} Feel It Buy. All Rights Reserved.`,
+      pageWidth / 2,
+      footerY + 21,
+      { align: 'center' }
+    );
+    
+    // Save the PDF
+    doc.save(`invoice-${order.id.substring(0, 8)}.pdf`);
   };
 
   const getStatusColor = (status: Order['status']) => {
@@ -502,6 +300,10 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancel
         return 'bg-green-100 text-green-800';
       case 'cancelled':
         return 'bg-red-100 text-red-800';
+      case 'return_requested':
+        return 'bg-orange-100 text-orange-800';
+      case 'returned':
+        return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -520,6 +322,10 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancel
         return <CheckCircle className="w-5 h-5" />;
       case 'cancelled':
         return <XCircle className="w-5 h-5" />;
+      case 'return_requested':
+        return <RotateCcw className="w-5 h-5" />;
+      case 'returned':
+        return <RotateCcw className="w-5 h-5" />;
       default:
         return <Package className="w-5 h-5" />;
     }
@@ -753,7 +559,7 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancel
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => handleReturnOrder(selectedOrder.id)}
+                    onClick={handleReturnOrder}
                   >
                     <RotateCcw className="w-4 h-4 mr-2" />
                     Return Order
@@ -764,7 +570,7 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancel
                   <Button
                     variant="destructive"
                     className="w-full"
-                    onClick={() => handleCancelOrder(selectedOrder.id)}
+                    onClick={handleCancelOrder}
                   >
                     <Ban className="w-4 h-4 mr-2" />
                     Cancel Order
@@ -780,6 +586,22 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancel
                 </div>
               )}
 
+              {selectedOrder.status === 'return_requested' && (
+                <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                  <p className="text-sm text-orange-800">
+                    Your return request has been submitted and is under review. Our team will contact you within 24-48 hours.
+                  </p>
+                </div>
+              )}
+
+              {selectedOrder.status === 'returned' && (
+                <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <p className="text-sm text-gray-800">
+                    This order has been returned. Your refund has been processed or replacement is being shipped.
+                  </p>
+                </div>
+              )}
+
               {selectedOrder.status === 'delivered' && (
                 <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
                   <p className="text-sm text-green-800">
@@ -791,6 +613,24 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancel
           </div>
         )}
       </div>
+
+      {/* Return Dialog */}
+      {showReturnDialog && selectedOrder && (
+        <ReturnDialog
+          order={selectedOrder}
+          onClose={() => setShowReturnDialog(false)}
+          onSubmit={handleSubmitReturn}
+        />
+      )}
+
+      {/* Cancel Order Dialog */}
+      {showCancelDialog && selectedOrder && (
+        <CancelOrderDialog
+          orderId={selectedOrder.id}
+          onClose={() => setShowCancelDialog(false)}
+          onSubmit={handleSubmitCancel}
+        />
+      )}
     </div>
   );
 }

@@ -11,6 +11,7 @@ export interface Product {
   images: string[];
   specifications: Record<string, string>;
   stock: number;
+  lowStockThreshold?: number; // Alert when stock falls below this number (default: 10)
   rating: number;
   reviewCount: number;
   reviews?: Review[];
@@ -59,7 +60,7 @@ export interface Order {
   userEmail?: string;
   items: CartItem[];
   total: number;
-  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'returned';
   shippingAddress: Address;
   paymentMethod: string;
   paymentStatus: 'pending' | 'completed' | 'paid' | 'failed' | 'refunded';
@@ -67,6 +68,20 @@ export interface Order {
   updatedAt?: string;
   estimatedDelivery: string;
   trackingNumber?: string;
+}
+
+export interface ReturnRequest {
+  id: string;
+  orderId: string;
+  userId: string;
+  returnType: 'refund' | 'replace';
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected' | 'processing' | 'completed';
+  items: { productId: string; productName: string; quantity: number; price: number }[];
+  totalAmount: number;
+  createdAt: string;
+  updatedAt?: string;
+  adminNotes?: string;
 }
 
 export interface Category {

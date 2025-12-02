@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
-import { Heart, Star, SlidersHorizontal } from 'lucide-react';
+import { Heart, Star, SlidersHorizontal, Package, AlertTriangle } from 'lucide-react';
 import { Product } from '../types';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
+import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -543,11 +544,17 @@ export function ProductCatalog({
                           }`}
                       />
                     </button>
-                    {product.stock < 10 && (
-                      <div className="absolute bottom-3 left-3 bg-orange-500 text-white px-2 py-1 rounded-md text-sm">
+                    {product.stock === 0 ? (
+                      <Badge variant="outline" className="absolute bottom-3 left-3 bg-red-600 text-white border-red-600">
+                        <Package className="w-3 h-3 mr-1" />
+                        Out of Stock
+                      </Badge>
+                    ) : product.stock <= (product.lowStockThreshold || 10) ? (
+                      <Badge variant="outline" className="absolute bottom-3 left-3 bg-orange-500 text-white border-orange-500">
+                        <AlertTriangle className="w-3 h-3 mr-1" />
                         Only {product.stock} left
-                      </div>
-                    )}
+                      </Badge>
+                    ) : null}
                   </div>
                   <div className="p-4" onClick={() => onViewProduct(product)}>
                     <p className="text-indigo-600 text-sm mb-1">{product.brand}</p>

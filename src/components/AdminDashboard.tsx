@@ -9,6 +9,8 @@ import {
   Settings,
   Bell,
   Image,
+  RotateCcw,
+  Warehouse,
 } from 'lucide-react';
 import { Product, Order } from '../types';
 import { Card } from './ui/card';
@@ -28,6 +30,8 @@ import { AdminUsers } from './admin/AdminUsers';
 import { AdminAnalytics } from './admin/AdminAnalytics';
 import { AdminBanners } from './admin/AdminBanners';
 import { AdminCoupons } from './admin/AdminCoupons';
+import { AdminReturns } from './admin/AdminReturns';
+import { AdminInventory } from './admin/AdminInventory';
 import { formatINR } from '../lib/currency';
 
 interface AdminDashboardProps {
@@ -40,6 +44,24 @@ interface AdminDashboardProps {
 export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProductsChange }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview');
 
+  // Handle stock updates
+  const handleUpdateStock = async (productId: string, newStock: number, lowStockThreshold?: number) => {
+    try {
+      const { productService } = await import('../lib/supabaseService');
+      await productService.updateProductStock(productId, newStock, lowStockThreshold);
+      
+      // Refresh products to show updated stock
+      if (onProductsChange) {
+        await onProductsChange();
+      }
+      
+      alert('Stock updated successfully!');
+    } catch (error) {
+      console.error('Error updating stock:', error);
+      alert(`Failed to update stock: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
   // Calculate stats
   const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
   const totalOrders = orders.length;
@@ -47,7 +69,10 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
   const activeOrders = orders.filter(
     (o) => !['delivered', 'cancelled'].includes(o.status)
   ).length;
-  const lowStockProducts = products.filter((p) => p.stock < 10).length;
+  const lowStockProducts = products.filter((p) => {
+    const threshold = p.lowStockThreshold || 10;
+    return p.stock > 0 && p.stock <= threshold;
+  }).length;
   
   const recentOrders = orders.slice(0, 5);
   const topProducts = products
@@ -80,6 +105,10 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
             <Package className="w-4 h-4 mr-2" />
             Products
           </TabsTrigger>
+          <TabsTrigger value="inventory">
+            <Warehouse className="w-4 h-4 mr-2" />
+            Inventory
+          </TabsTrigger>
           <TabsTrigger value="orders">
             <ShoppingBag className="w-4 h-4 mr-2" />
             Orders
@@ -95,6 +124,10 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
           <TabsTrigger value="coupons">
             <DollarSign className="w-4 h-4 mr-2" />
             Coupons
+          </TabsTrigger>
+          <TabsTrigger value="returns">
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Returns
           </TabsTrigger>
           <TabsTrigger value="analytics">
             <TrendingUp className="w-4 h-4 mr-2" />
@@ -267,6 +300,11 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
           <AdminProducts products={products} onProductsChange={onProductsChange} />
         </TabsContent>
 
+        {/* Inventory Tab */}
+        <TabsContent value="inventory">
+          <AdminInventory products={products} onUpdateStock={handleUpdateStock} />
+        </TabsContent>
+
         {/* Orders Tab */}
         <TabsContent value="orders">
           <AdminOrders orders={orders} onUpdateOrderStatus={onUpdateOrderStatus} />
@@ -285,6 +323,11 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
         {/* Coupons Tab */}
         <TabsContent value="coupons">
           <AdminCoupons />
+        </TabsContent>
+
+        {/* Returns Tab */}
+        <TabsContent value="returns">
+          <AdminReturns products={products} onProductsChange={onProductsChange} />
         </TabsContent>
 
         {/* Analytics Tab */}

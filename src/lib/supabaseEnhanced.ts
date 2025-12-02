@@ -592,3 +592,158 @@ export const uploadService = {
       .eq('id', session.session.user.id);
   },
 };
+
+// ==================== RETURN REQUEST SERVICES ====================
+
+export const returnService = {
+  // Create a return request
+  async createReturnRequest(params: {
+    orderId: string;
+    returnType: 'refund' | 'replace';
+    reason: string;
+    items: { productId: string; productName: string; quantity: number; price: number }[];
+    totalAmount: number;
+  }) {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session.session?.user) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+      .from('return_requests')
+      .insert({
+        order_id: params.orderId,
+        user_id: session.session.user.id,
+        return_type: params.returnType,
+        reason: params.reason,
+        items: params.items,
+        total_amount: params.totalAmount,
+        status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Update order status to indicate return requested
+    await supabase
+      .from('orders')
+      .update({ status: 'return_requested' })
+      .eq('id', params.orderId);
+
+    return data;
+  },
+
+  // Get user's return requests
+  async getUserReturnRequests() {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session.session?.user) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+      .from('return_requests')
+      .select('*, orders(id, created_at)')
+      .eq('user_id', session.session.user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Get all return requests (admin only)
+  async getAllReturnRequests() {
+    try {
+      const { data, error } = await supabase
+        .from('return_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching return requests:', error);
+        throw error;
+      }
+      
+      // Fetch user profiles separately to avoid relationship issues
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map(r => r.user_id))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, name, email')
+          .in('id', userIds);
+        
+        // Attach profiles to return requests
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        const enrichedData = data.map(returnReq => ({
+          ...returnReq,
+          profiles: profileMap.get(returnReq.user_id)
+        }));
+        
+        console.log('Return requests data:', enrichedData);
+        return enrichedData;
+      }
+      
+      console.log('Return requests data:', data);
+      return data;
+    } catch (error) {
+      console.error('getAllReturnRequests error:', error);
+      throw error;
+    }
+  },
+
+  // Update return request status (admin only)
+  async updateReturnStatus(returnId: string, status: 'approved' | 'rejected' | 'processing' | 'completed', adminNotes?: string) {
+    const updates: any = { status };
+    if (adminNotes) updates.admin_notes = adminNotes;
+
+    const { data, error } = await supabase
+      .from('return_requests')
+      .update(updates)
+      .eq('id', returnId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // If approved and return type is refund, update order payment status
+    if (status === 'completed') {
+      const returnRequest = data;
+      if (returnRequest.return_type === 'refund') {
+        await supabase
+          .from('orders')
+          .update({ 
+            payment_status: 'refunded',
+            status: 'returned'
+          })
+          .eq('id', returnRequest.order_id);
+      } else {
+        // For replace, update order status
+        await supabase
+          .from('orders')
+          .update({ status: 'returned' })
+          .eq('id', returnRequest.order_id);
+      }
+
+      // Return stock to inventory
+      if (returnRequest.items && Array.isArray(returnRequest.items)) {
+        for (const item of returnRequest.items) {
+          await inventoryService.returnStock(
+            [{ productId: item.productId, quantity: item.quantity }],
+            returnRequest.order_id,
+            `Return approved - ${returnRequest.return_type}`
+          );
+        }
+      }
+    }
+
+    return data;
+  },
+
+  // Get return request by ID
+  async getReturnRequest(returnId: string) {
+    const { data, error } = await supabase
+      .from('return_requests')
+      .select('*, orders(id, created_at, total_amount), profiles(full_name, email)')
+      .eq('id', returnId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+};
