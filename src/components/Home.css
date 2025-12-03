@@ -1,0 +1,295 @@
+/* Home Component Styles - Bootstrap + Custom */
+
+/* Reset any conflicting Tailwind base styles for this component */
+.home-landing-page {
+  /* Bootstrap will handle most of the styling */
+  background: white;
+  min-height: 100vh;
+}
+
+/* Ensure Bootstrap and custom styles work together */
+.home-landing-page *,
+.home-landing-page *::before,
+.home-landing-page *::after {
+  box-sizing: border-box;
+}
+
+/* Allow Tailwind utilities to work alongside Bootstrap */
+.home-landing-page [class*="bg-gradient"],
+.home-landing-page [class*="from-"],
+.home-landing-page [class*="to-"],
+.home-landing-page [class*="via-"] {
+  /* Gradients will use Tailwind's gradient system */
+  background-image: var(--tw-gradient-stops, var(--tw-gradient));
+}
+
+/* Ensure proper stacking for positioned elements */
+.home-landing-page .relative {
+  position: relative;
+}
+
+.home-landing-page .absolute {
+  position: absolute;
+}
+
+.home-landing-page .fixed {
+  position: fixed;
+}
+
+/* Ensure all sections have proper positioning */
+.home-landing-page section {
+  position: relative !important;
+}
+
+/* Force gradient backgrounds to work */
+.home-landing-page [class*="bg-gradient"],
+.home-landing-page [class*="bg-linear"] {
+  background-image: var(--tw-gradient-stops, var(--tw-gradient)) !important;
+}
+
+/* Ensure proper display */
+.home-landing-page .flex {
+  display: flex !important;
+}
+
+.home-landing-page .grid {
+  display: grid !important;
+}
+
+.home-landing-page .block {
+  display: block !important;
+}
+
+.home-landing-page .inline-block {
+  display: inline-block !important;
+}
+
+.home-landing-page .inline-flex {
+  display: inline-flex !important;
+}
+
+/* Force proper positioning classes */
+.home-landing-page .relative {
+  position: relative !important;
+}
+
+.home-landing-page .absolute {
+  position: absolute !important;
+}
+
+.home-landing-page .fixed {
+  position: fixed !important;
+}
+
+/* Ensure proper overflow */
+.home-landing-page .overflow-hidden {
+  overflow: hidden !important;
+}
+
+/* Force proper z-index */
+.home-landing-page [class*="z-"] {
+  z-index: var(--tw-z-index) !important;
+}
+
+/* Text colors */
+.home-landing-page .text-white {
+  color: #ffffff !important;
+}
+
+.home-landing-page .text-gray-900 {
+  color: rgb(17, 24, 39) !important;
+}
+
+.home-landing-page .text-gray-600 {
+  color: rgb(75, 85, 99) !important;
+}
+
+.home-landing-page .text-gray-400 {
+  color: rgb(156, 163, 175) !important;
+}
+
+.home-landing-page .text-indigo-600 {
+  color: rgb(79, 70, 229) !important;
+}
+
+/* Background colors */
+.home-landing-page .bg-white {
+  background-color: #ffffff !important;
+}
+
+.home-landing-page .bg-gray-50 {
+  background-color: rgb(249, 250, 251) !important;
+}
+
+.home-landing-page .bg-gray-100 {
+  background-color: rgb(243, 244, 246) !important;
+}
+
+.home-landing-page .bg-indigo-600 {
+  background-color: rgb(79, 70, 229) !important;
+}
+
+.home-landing-page .bg-indigo-700 {
+  background-color: rgb(67, 56, 202) !important;
+}
+
+/* Shadows */
+.home-landing-page .shadow-xl {
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
+}
+
+.home-landing-page .shadow-2xl {
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25) !important;
+}
+
+/* Rounded corners */
+.home-landing-page .rounded-full {
+  border-radius: 9999px !important;
+}
+
+.home-landing-page .rounded-2xl {
+  border-radius: 1rem !important;
+}
+
+.home-landing-page .rounded-3xl {
+  border-radius: 1.5rem !important;
+}
+
+/* Spacing - Padding */
+.home-landing-page .p-4 {
+  padding: 1rem !important;
+}
+
+.home-landing-page .p-6 {
+  padding: 1.5rem !important;
+}
+
+.home-landing-page .p-8 {
+  padding: 2rem !important;
+}
+
+.home-landing-page .py-20 {
+  padding-top: 5rem !important;
+  padding-bottom: 5rem !important;
+}
+
+.home-landing-page .py-24 {
+  padding-top: 6rem !important;
+  padding-bottom: 6rem !important;
+}
+
+.home-landing-page .px-4 {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+/* Spacing - Margin */
+.home-landing-page .mb-4 {
+  margin-bottom: 1rem !important;
+}
+
+.home-landing-page .mb-6 {
+  margin-bottom: 1.5rem !important;
+}
+
+.home-landing-page .mb-8 {
+  margin-bottom: 2rem !important;
+}
+
+.home-landing-page .mb-16 {
+  margin-bottom: 4rem !important;
+}
+
+/* Text sizes */
+.home-landing-page .text-lg {
+  font-size: 1.125rem !important;
+  line-height: 1.75rem !important;
+}
+
+.home-landing-page .text-xl {
+  font-size: 1.25rem !important;
+  line-height: 1.75rem !important;
+}
+
+.home-landing-page .text-2xl {
+  font-size: 1.5rem !important;
+  line-height: 2rem !important;
+}
+
+.home-landing-page .text-3xl {
+  font-size: 1.875rem !important;
+  line-height: 2.25rem !important;
+}
+
+.home-landing-page .text-4xl {
+  font-size: 2.25rem !important;
+  line-height: 2.5rem !important;
+}
+
+.home-landing-page .text-5xl {
+  font-size: 3rem !important;
+  line-height: 1 !important;
+}
+
+.home-landing-page .text-6xl {
+  font-size: 3.75rem !important;
+  line-height: 1 !important;
+}
+
+.home-landing-page .text-7xl {
+  font-size: 4.5rem !important;
+  line-height: 1 !important;
+}
+
+/* Font weights */
+.home-landing-page .font-bold {
+  font-weight: 700 !important;
+}
+
+.home-landing-page .font-semibold {
+  font-weight: 600 !important;
+}
+
+/* Transitions */
+.home-landing-page .transition-all {
+  transition-property: all !important;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition-duration: 150ms !important;
+}
+
+.home-landing-page .duration-300 {
+  transition-duration: 300ms !important;
+}
+
+.home-landing-page .duration-500 {
+  transition-duration: 500ms !important;
+}
+
+.home-landing-page .duration-700 {
+  transition-duration: 700ms !important;
+}
+
+.home-landing-page .duration-1000 {
+  transition-duration: 1000ms !important;
+}
+
+/* Opacity */
+.home-landing-page .opacity-90 {
+  opacity: 0.9 !important;
+}
+
+.home-landing-page .opacity-85 {
+  opacity: 0.85 !important;
+}
+
+.home-landing-page .opacity-80 {
+  opacity: 0.8 !important;
+}
+
+.home-landing-page .opacity-0 {
+  opacity: 0 !important;
+}
+
+.home-landing-page .opacity-100 {
+  opacity: 1 !important;
+}
