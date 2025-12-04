@@ -1,8 +1,48 @@
+# Feel It Buy - Robots.txt
+# www.feelitbuy.com
+
+User-agent: *
+Allow: /
+Allow: /catalog
+Allow: /products/
+Allow: /categories/
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 1
+
+# Disallow admin and user-specific pages
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /cart
+Disallow: /checkout
+Disallow: /profile
+Disallow: /orders
+Disallow: /wishlist
+
+# Disallow API endpoints
+Disallow: /api/
+Disallow: /*.json$
+
+# Allow important bots
 User-agent: Googlebot
 Allow: /
+Allow: /catalog
+Allow: /products/
 
 User-agent: Bingbot
 Allow: /
+Allow: /catalog
+Allow: /products/
+
+User-agent: Slurp
+Allow: /
+Allow: /catalog
+Allow: /products/
+
+User-agent: DuckDuckBot
+Allow: /
+Allow: /catalog
+Allow: /products/
 
 User-agent: Twitterbot
 Allow: /
@@ -10,5 +50,8 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
-User-agent: *
+User-agent: LinkedInBot
 Allow: /
+
+# Sitemap location
+Sitemap: https://feelitbuy.com/sitemap.xml

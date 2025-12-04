@@ -1699,42 +1699,156 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products }: H
         </section>
 
         {/* Contact/Footer Info Section */}
-        <section style={{ padding: 'clamp(2.5rem, 5vw, 4rem) 0', backgroundColor: '#111827', color: 'white' }}>
+        <section style={{ padding: 'clamp(3rem, 6vw, 5rem) 0', backgroundColor: '#111827', color: 'white' }}>
           <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '3rem' }}>
-              <div style={{ textAlign: 'center' }} className="md:text-left">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginBottom: '1.5rem' }} className="md:justify-start">
-                  <Phone style={{ width: '2rem', height: '2rem', color: '#a5b4fc' }} />
-                  <div>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>Call Us</h3>
-                    <p style={{ color: '#9ca3af' }}>1800-123-4567</p>
-                  </div>
-                </div>
+            {/* About Section */}
+            <div style={{ textAlign: 'center', marginBottom: '4rem', maxWidth: '48rem', margin: '0 auto 4rem' }}>
+              <h2 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.25rem)', fontWeight: 'bold', marginBottom: '1rem' }}>Feel It Buy</h2>
+              <p style={{ color: '#9ca3af', lineHeight: '1.8', fontSize: 'clamp(0.875rem, 1.5vw, 1rem)' }}>
+                Your one-stop e-commerce store for all electronic appliances. We offer the best prices, warranty, and 24/7 support. 
+                Plus, receive a free gift product with every purchase!
+              </p>
+            </div>
+
+            {/* Footer Columns */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '3rem', marginBottom: '3rem' }}>
+              {/* My Account */}
+              <div>
+                <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#a5b4fc' }}>My Account</h3>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  <li style={{ marginBottom: '0.75rem' }}>
+                    <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('orders'); }} style={{ color: '#9ca3af', transition: 'color 0.2s', textDecoration: 'none' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}>
+                      Track Orders
+                    </a>
+                  </li>
+                  <li style={{ marginBottom: '0.75rem' }}>
+                    <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('profile'); }} style={{ color: '#9ca3af', transition: 'color 0.2s', textDecoration: 'none' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}>
+                      Order History
+                    </a>
+                  </li>
+                  <li style={{ marginBottom: '0.75rem' }}>
+                    <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('wishlist'); }} style={{ color: '#9ca3af', transition: 'color 0.2s', textDecoration: 'none' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}>
+                      Wishlist
+                    </a>
+                  </li>
+                  <li style={{ marginBottom: '0.75rem' }}>
+                    <a href="#" style={{ color: '#9ca3af', transition: 'color 0.2s', textDecoration: 'none' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}>
+                      Returns
+                    </a>
+                  </li>
+                </ul>
               </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                  <Mail style={{ width: '2rem', height: '2rem', color: '#a5b4fc' }} />
-                  <div>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>Email Us</h3>
-                    <p style={{ color: '#9ca3af' }}>support@feelitbuy.com</p>
-                  </div>
-                </div>
+
+              {/* Information */}
+              <div>
+                <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#a5b4fc' }}>Information</h3>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  <li style={{ marginBottom: '0.75rem' }}>
+                    <a href="#" style={{ color: '#9ca3af', transition: 'color 0.2s', textDecoration: 'none' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}>
+                      Our Story
+                    </a>
+                  </li>
+                  <li style={{ marginBottom: '0.75rem' }}>
+                    <a href="#" style={{ color: '#9ca3af', transition: 'color 0.2s', textDecoration: 'none' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}>
+                      Careers
+                    </a>
+                  </li>
+                  <li style={{ marginBottom: '0.75rem' }}>
+                    <a href="#" style={{ color: '#9ca3af', transition: 'color 0.2s', textDecoration: 'none' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}>
+                      Privacy Policy
+                    </a>
+                  </li>
+                  <li style={{ marginBottom: '0.75rem' }}>
+                    <a href="#" style={{ color: '#9ca3af', transition: 'color 0.2s', textDecoration: 'none' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}>
+                      Contact Us
+                    </a>
+                  </li>
+                </ul>
               </div>
-              <div style={{ textAlign: 'center' }} className="md:text-right">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginBottom: '1.5rem' }} className="md:justify-end">
-                  <MapPin style={{ width: '2rem', height: '2rem', color: '#a5b4fc' }} />
-                  <div>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>Location</h3>
-                    <p style={{ color: '#9ca3af' }}>Karnataka, India</p>
-                  </div>
+
+              {/* Categories */}
+              <div>
+                <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#a5b4fc' }}>Categories</h3>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  <li style={{ marginBottom: '0.75rem' }}>
+                    <a href="#" onClick={(e) => { e.preventDefault(); onCategoryClick('electronics'); }} style={{ color: '#9ca3af', transition: 'color 0.2s', textDecoration: 'none' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}>
+                      Electronics
+                    </a>
+                  </li>
+                  <li style={{ marginBottom: '0.75rem' }}>
+                    <a href="#" onClick={(e) => { e.preventDefault(); onCategoryClick('furniture'); }} style={{ color: '#9ca3af', transition: 'color 0.2s', textDecoration: 'none' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}>
+                      Furniture
+                    </a>
+                  </li>
+                  <li style={{ marginBottom: '0.75rem' }}>
+                    <a href="#" onClick={(e) => { e.preventDefault(); onCategoryClick('appliances'); }} style={{ color: '#9ca3af', transition: 'color 0.2s', textDecoration: 'none' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}>
+                      Home Appliances
+                    </a>
+                  </li>
+                  <li style={{ marginBottom: '0.75rem' }}>
+                    <a href="#" onClick={(e) => { e.preventDefault(); onCategoryClick('air-solutions'); }} style={{ color: '#9ca3af', transition: 'color 0.2s', textDecoration: 'none' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}>
+                      Air Solutions
+                    </a>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Contact Info */}
+              <div>
+                <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#a5b4fc' }}>Talk To Us</h3>
+                <div style={{ marginBottom: '1rem' }}>
+                  <p style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Got Questions? Call us</p>
+                  <a href="tel:9483509264" style={{ color: 'white', fontSize: '1.125rem', fontWeight: '600', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Phone style={{ width: '1.25rem', height: '1.25rem', color: '#a5b4fc' }} />
+                    94835 09264
+                  </a>
+                </div>
+                <div style={{ marginBottom: '1rem' }}>
+                  <a href="mailto:support@feelitbuy.com" style={{ color: '#9ca3af', fontSize: '0.875rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}>
+                    <Mail style={{ width: '1rem', height: '1rem' }} />
+                    support@feelitbuy.com
+                  </a>
+                </div>
+                <div>
+                  <p style={{ color: '#9ca3af', fontSize: '0.875rem', display: 'flex', alignItems: 'start', gap: '0.5rem', lineHeight: '1.6' }}>
+                    <MapPin style={{ width: '1rem', height: '1rem', marginTop: '0.25rem', flexShrink: 0 }} />
+                    Ground floor, Lakshmikanth Complex, Jodurasthe, Karkala - 576117, Udupi, Karnataka
+                  </p>
                 </div>
               </div>
             </div>
 
-            <div style={{ borderTop: '1px solid #1f2937', marginTop: '3rem', paddingTop: '3rem' }}>
+            {/* Bottom Bar */}
+            <div style={{ borderTop: '1px solid #1f2937', paddingTop: '2rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'center', gap: '1.5rem' }} className="md:flex-row">
-                <p style={{ color: '#9ca3af' }}>
-                  © 2025 Feel It Buy. All rights reserved.
+                <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>
+                  © 2025 Feel It Buy. All rights reserved. Your one-stop shop for electronic appliances.
                 </p>
                 <div style={{ display: 'flex', gap: '1.5rem' }}>
                   <a href="#" style={{ color: '#9ca3af', transition: 'color 0.2s' }}
