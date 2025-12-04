@@ -47,7 +47,6 @@ import { useState, useEffect, useRef } from 'react';
 import { formatINR } from '../lib/currency';
 import { bannerService } from '../lib/supabaseService';
 import type { HeroBanner } from '../lib/supabase';
-import 'bootstrap/dist/css/bootstrap.min.css';
 import './Home.css';
 
 interface HomeProps {
@@ -67,6 +66,23 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products }: H
   const [banners, setBanners] = useState<HeroBanner[]>([]);
   const [currentBanner, setCurrentBanner] = useState(0);
   const [bannersLoading, setBannersLoading] = useState(true);
+
+  // Load Bootstrap CSS only when this component mounts
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css';
+    link.id = 'bootstrap-css';
+    document.head.appendChild(link);
+
+    // Cleanup: remove Bootstrap when component unmounts
+    return () => {
+      const bootstrapLink = document.getElementById('bootstrap-css');
+      if (bootstrapLink) {
+        bootstrapLink.remove();
+      }
+    };
+  }, []);
 
   const heroSlides = [
     {

@@ -10,6 +10,7 @@ import { OrderTracking } from './components/OrderTracking';
 import { UserProfile } from './components/UserProfile';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AuthModal } from './components/AuthModal';
+import { SignupSuccess } from './components/SignupSuccess';
 import { Header } from './components/Header';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { Product, User, Order, CartItem } from './types';
@@ -26,6 +27,8 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showSignupSuccess, setShowSignupSuccess] = useState(false);
+  const [signupEmail, setSignupEmail] = useState('');
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [buyNowItems, setBuyNowItems] = useState<CartItem[]>([]);
@@ -201,10 +204,11 @@ export default function App() {
     checkUser();
   };
 
-  const handleRegister = () => {
+  const handleRegister = (email: string) => {
     setShowAuthModal(false);
-    // After registration sign-in, ensure user reflected
-    checkUser();
+    setSignupEmail(email);
+    setShowSignupSuccess(true);
+    // Don't auto-login, user needs to verify email first
   };
 
   // Hydrate cart & wishlist from Supabase after user becomes available
@@ -867,6 +871,17 @@ export default function App() {
           onSwitchMode={() =>
             setAuthMode((prev: 'login' | 'register') => (prev === 'login' ? 'register' : 'login'))
           }
+        />
+      )}
+
+      {showSignupSuccess && (
+        <SignupSuccess
+          email={signupEmail}
+          onClose={() => {
+            setShowSignupSuccess(false);
+            setAuthMode('login');
+            setShowAuthModal(true);
+          }}
         />
       )}
 

@@ -9,7 +9,7 @@ interface AuthModalProps {
   mode: 'login' | 'register';
   onClose: () => void;
   onLogin: () => void;
-  onRegister: () => void;
+  onRegister: (email: string) => void;
   onSwitchMode: () => void;
 }
 
@@ -52,7 +52,7 @@ export function AuthModal({ mode, onClose, onLogin, onRegister, onSwitchMode }: 
         }
 
         await authService.signUp(formData.email, formData.password, formData.name, formData.phone);
-        onRegister();
+        onRegister(formData.email);
       }
     } catch (err: any) {
       console.error('Auth error:', err);
