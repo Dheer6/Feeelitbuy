@@ -1,11 +1,18 @@
 import { useState } from 'react';
-import { Eye, Search, User as UserIcon } from 'lucide-react';
+import { Eye, Search, User as UserIcon, RefreshCw, PackageOpen } from 'lucide-react';
 import { Order } from '../../types';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { formatINR } from '../../lib/currency';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '../ui/dialog';
 import {
   Table,
   TableBody,
@@ -30,6 +37,8 @@ interface AdminOrdersProps {
 export function AdminOrders({ orders, onUpdateOrderStatus }: AdminOrdersProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
+  const [showViewDialog, setShowViewDialog] = useState(false);
 
   const filteredOrders = orders.filter((order) => {
     const q = searchQuery.toLowerCase();
@@ -96,12 +105,13 @@ export function AdminOrders({ orders, onUpdateOrderStatus }: AdminOrdersProps) {
           <TableHeader>
             <TableRow>
               <TableHead>Order ID</TableHead>
-              <TableHead>Customer</TableHead>
+              {/* <TableHead>Customer</TableHead> */}
               <TableHead>Date</TableHead>
               <TableHead>Items</TableHead>
               <TableHead>Total</TableHead>
               <TableHead>Payment</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Return</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -166,8 +176,27 @@ export function AdminOrders({ orders, onUpdateOrderStatus }: AdminOrdersProps) {
                     </SelectContent>
                   </Select>
                 </TableCell>
+                <TableCell>
+                  {order.status === 'returned' ? (
+                    <Badge className="bg-orange-100 text-orange-800 flex items-center gap-1 w-fit">
+                      <RefreshCw className="w-3 h-3" />
+                      Returned
+                    </Badge>
+                  ) : order.status === 'delivered' ? (
+                    <span className="text-xs text-black">No</span>
+                  ) : (
+                    <span className="text-xs text-black">Yes</span>
+                  )}
+                </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {
+                      setViewingOrder(order);
+                      setShowViewDialog(true);
+                    }}
+                  >
                     <Eye className="w-4 h-4" />
                   </Button>
                 </TableCell>
@@ -181,6 +210,103 @@ export function AdminOrders({ orders, onUpdateOrderStatus }: AdminOrdersProps) {
         <div className="text-center py-12">
           <p className="text-gray-500">No orders found</p>
         </div>
+      )}
+
+      {/* View Order Dialog */}
+      {viewingOrder && (
+        <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Order Details</DialogTitle>
+              <DialogDescription>
+                Order ID: {viewingOrder.id}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {/* Customer Info */}
+              <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="text-sm text-gray-500">Customer</p>
+                  <p className="font-medium">{viewingOrder.userName || 'Unknown'}</p>
+                  <p className="text-sm text-gray-600">{viewingOrder.userEmail}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Order Date</p>
+                  <p className="font-medium">{new Date(viewingOrder.createdAt).toLocaleString()}</p>
+                </div>
+              </div>
+
+              {/* Shipping Address */}
+              <div>
+                <h3 className="font-semibold mb-2">Shipping Address</h3>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p>{viewingOrder.shippingAddress.name}</p>
+                  <p>{viewingOrder.shippingAddress.street}</p>
+                  <p>{viewingOrder.shippingAddress.city}, {viewingOrder.shippingAddress.state} {viewingOrder.shippingAddress.zipCode}</p>
+                  <p>{viewingOrder.shippingAddress.country}</p>
+                  {viewingOrder.shippingAddress.phone && <p className="mt-2">Phone: {viewingOrder.shippingAddress.phone}</p>}
+                </div>
+              </div>
+
+              {/* Order Items */}
+              <div>
+                <h3 className="font-semibold mb-2">Items ({viewingOrder.items.length})</h3>
+                <div className="space-y-3">
+                  {viewingOrder.items.map((item, index) => (
+                    <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                      <img 
+                        src={item.product.images[0]} 
+                        alt={item.product.name}
+                        className="w-16 h-16 object-cover rounded"
+                      />
+                      <div className="flex-1">
+                        <p className="font-medium">{item.product.name}</p>
+                        <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+                      </div>
+                      <p className="font-semibold">{formatINR(item.product.price * item.quantity)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Payment & Status */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Payment Method</p>
+                  <p className="font-medium capitalize">{viewingOrder.paymentMethod}</p>
+                  <Badge className={viewingOrder.paymentStatus === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
+                    {viewingOrder.paymentStatus}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Order Status</p>
+                  <Badge className={getStatusColor(viewingOrder.status)}>
+                    {viewingOrder.status}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Total */}
+              <div className="pt-4 border-t">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-semibold">Total</span>
+                  <span className="text-2xl font-bold text-indigo-600">{formatINR(viewingOrder.total)}</span>
+                </div>
+                {viewingOrder.couponCode && (
+                  <p className="text-sm text-green-600 mt-1">Coupon applied: {viewingOrder.couponCode} (-{formatINR(viewingOrder.couponDiscount || 0)})</p>
+                )}
+              </div>
+
+              {viewingOrder.trackingNumber && (
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-gray-500">Tracking Number</p>
+                  <p className="font-mono font-medium">{viewingOrder.trackingNumber}</p>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

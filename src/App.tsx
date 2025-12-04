@@ -113,6 +113,7 @@ export default function App() {
           const profile = await authService.getCurrentProfile();
           if (profile) {
             profileLoaded = true;
+            console.log('Profile loaded:', profile.email, 'Role:', profile.role);
             setCurrentUser({
               id: profile.id,
               name: profile.full_name || profile.email.split('@')[0],
@@ -123,6 +124,7 @@ export default function App() {
             });
           }
         } catch (profileError) {
+          console.error('Failed to load profile:', profileError);
           // fallback below
         }
         if (!profileLoaded) {
@@ -771,17 +773,49 @@ export default function App() {
           />
         );
       case 'admin':
-        return currentUser?.role === 'admin' ? (
+        // Show loading state while checking auth
+        if (authLoading) {
+          return (
+            <div className="container mx-auto px-4 py-16 text-center">
+              <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-600">Verifying access...</p>
+            </div>
+          );
+        }
+        
+        if (!currentUser) {
+          return (
+            <div className="container mx-auto px-4 py-16 text-center">
+              <p className="text-gray-600 mb-4">Please login to access admin panel</p>
+              <Button onClick={() => {
+                setAuthMode('login');
+                setShowAuthModal(true);
+              }}>
+                Login
+              </Button>
+            </div>
+          );
+        }
+        
+        if (currentUser.role !== 'admin') {
+          return (
+            <div className="container mx-auto px-4 py-16 text-center">
+              <p className="text-red-600">Access Denied. Admin privileges required.</p>
+              <p className="text-sm text-gray-500 mt-2">Current role: {currentUser.role}</p>
+              <Button onClick={() => setCurrentPage('home')} className="mt-4">
+                Go to Home
+              </Button>
+            </div>
+          );
+        }
+        
+        return (
           <AdminDashboard
             products={products}
-            orders={currentUser.role === 'admin' ? adminOrders : orders}
+            orders={adminOrders}
             onUpdateOrderStatus={handleUpdateOrderStatus}
             onProductsChange={handleProductsRefresh}
           />
-        ) : (
-          <div className="container mx-auto px-4 py-16 text-center">
-            <p>Access Denied. Admin privileges required.</p>
-          </div>
         );
       default:
         return null;
