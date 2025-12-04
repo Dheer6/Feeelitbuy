@@ -115,81 +115,60 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products }: H
   ];
 
   const categories = [
-    { 
-      id: 'smartphones', 
-      name: 'Smartphones', 
-      icon: Smartphone, 
-      color: 'from-blue-500 to-cyan-500', 
-      count: '500+',
-      image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=80'
-    },
-    { 
-      id: 'laptops', 
-      name: 'Laptops', 
-      icon: Laptop, 
-      color: 'from-purple-500 to-pink-500', 
+    
+    {
+      id: 'electronics',
+      name: 'Electronics',
+      icon: Laptop,
+      color: 'from-purple-500 to-pink-500',
       count: '300+',
       image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&q=80'
     },
-    { 
-      id: 'headphones', 
-      name: 'Audio', 
-      icon: Headphones, 
-      color: 'from-green-500 to-teal-500', 
-      count: '250+',
-      image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80'
-    },
-    { 
-      id: 'sofas', 
-      name: 'Sofas', 
-      icon: Sofa, 
-      color: 'from-orange-500 to-red-500', 
+    
+    {
+      id: 'furniture',
+      name: 'Furniture',
+      icon: Sofa,
+      color: 'from-orange-500 to-red-500',
       count: '180+',
       image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80'
     },
-    { 
-      id: 'beds', 
-      name: 'Beds', 
-      icon: Bed, 
-      color: 'from-indigo-500 to-blue-500', 
-      count: '120+',
-      image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=400&q=80'
-    },
-    { 
-      id: 'all', 
-      name: 'View All', 
-      icon: ShoppingBag, 
-      color: 'from-gray-700 to-gray-900', 
+   
+    {
+      id: 'all',
+      name: 'View All',
+      icon: ShoppingBag,
+      color: 'from-gray-700 to-gray-900',
       count: '1500+',
       image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&q=80'
     }
   ];
 
   const features = [
-    { 
-      icon: Truck, 
-      title: 'Free Delivery', 
+    {
+      icon: Truck,
+      title: 'Free Delivery',
       description: 'On orders above ₹500 across India',
       color: 'from-blue-500 to-cyan-500',
       detail: 'Get your products delivered to your doorstep at no extra cost'
     },
-    { 
-      icon: Shield, 
-      title: 'Secure Payment', 
+    {
+      icon: Shield,
+      title: 'Secure Payment',
       description: '100% safe & protected transactions',
       color: 'from-green-500 to-emerald-500',
       detail: 'Multiple payment options with bank-level security'
     },
-    { 
-      icon: RefreshCw, 
-      title: 'Easy Returns', 
+    {
+      icon: RefreshCw,
+      title: 'Easy Returns',
       description: '7-day hassle-free return policy',
       color: 'from-purple-500 to-pink-500',
       detail: 'No questions asked return policy for damaged products'
     },
-    { 
-      icon: Headphones, 
-      title: '24/7 Support', 
+    {
+      icon: Headphones,
+      title: '24/7 Support',
       description: 'Always here to help you',
       color: 'from-orange-500 to-red-500',
       detail: 'Round the clock customer support via chat, email & phone'
@@ -243,8 +222,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products }: H
   ];
 
   const brands = [
-    { name: 'Samsung', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/24/Samsung_Logo.svg' },
-    { name: 'LG', logo: 'https://upload.wikimedia.org/wikipedia/commons/b/bf/LG_logo_%282015%29.svg' },
+
     { name: 'Sony', logo: 'https://upload.wikimedia.org/wikipedia/commons/c/ca/Sony_logo.svg' },
     { name: 'Apple', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg' },
     { name: 'Dell', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/48/Dell_Logo.svg' },
@@ -323,252 +301,233 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products }: H
   return (
     <>
       <div className="home-landing-page min-h-screen bg-white">
-      
-      {/* Hero Section with Auto-Carousel */}
-      <section style={{ position: 'relative', height: 'clamp(450px, 70vh, 600px)', overflow: 'hidden' }} className="hero-carousel">
-          {heroSlides.map((slide, index) => (
-            <div
-              key={slide.id}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                opacity: index === currentSlide ? 1 : 0,
-                transform: index === currentSlide ? 'scale(1)' : 'scale(1.05)',
-                transition: 'all 1s ease-in-out',
-                zIndex: index === currentSlide ? 1 : 0
-              }}
-            >
-              {/* Background Image with Overlay */}
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-                <img
-                  src={slide.image}
-                  alt={slide.title}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-                <div style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: `linear-gradient(to right, ${slide.gradient === 'from-blue-600 to-indigo-600' ? '#2563eb, #4f46e5' : slide.gradient === 'from-purple-600 to-pink-600' ? '#9333ea, #db2777' : '#ea580c, #dc2626'})`,
-                  opacity: 0.9
-                }} />
-                {/* Animated Pattern Overlay */}
-                <div style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-                  backgroundSize: '50px 50px',
-                  opacity: 0.1
-                }} />
-              </div>
 
-              {/* Content */}
-              <div className="container" style={{ position: 'relative', height: '100%', display: 'flex', alignItems: 'center', maxWidth: '1280px', margin: '0 auto', padding: '0 1.5rem' }}>
-                <div style={{ maxWidth: '90%', color: 'white' }}>
-                  {/* Badge */}
-                  <div style={{ display: 'inline-block', marginBottom: '1.5rem', animation: 'bounce 1s infinite' }}>
-                    <span style={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                      backdropFilter: 'blur(12px)',
-                      padding: '0.75rem 1.5rem',
-                      borderRadius: '9999px',
-                      fontSize: '0.875rem',
-                      fontWeight: 'bold',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-                    }}>
-                      <Zap style={{ width: '1rem', height: '1rem' }} />
-                      {slide.badge}
-                    </span>
+     
+
+         {/* Promotional Banners Section */}
+        {!bannersLoading && banners.length > 0 && (
+          <section style={{ position: 'relative', height: 'clamp(400px, 60vh, 600px)', overflow: 'hidden' }} className="hero-carousel">
+            <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0' }}>
+                {banners.map((banner, index) => (
+                  <div
+                    key={banner.id}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      opacity: index === currentBanner ? 1 : 0,
+                      transform: index === currentBanner ? 'scale(1)' : 'scale(1.05)',
+                      transition: 'all 1s',
+                      zIndex: index === currentBanner ? 1 : 0
+                    }}
+                  >
+                    {/* Background Image */}
+                    {banner.image_url && (
+                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+                        <img
+                          src={banner.image_url}
+                          alt={banner.title}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                        <div style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          background: "linear-gradient(to right, rgba(0,0,0,0.9), rgba(0,0,0,0.3))",
+                          opacity: 0.95
+                        }} />
+                      </div>
+                    )}
+
+                    {/* Content */}
+                    <div style={{ position: 'relative', height: '100%', display: 'flex', alignItems: 'center' }}>
+                      <div style={{ maxWidth: '80rem', margin: '0 auto', padding: 'clamp(1rem, 3vw, 6rem)', width: '100%' }}>
+                        <div style={{ maxWidth: '42rem', color: 'white' }}>
+                          {/* Offer Badge */}
+                          {banner.offer_badge && (
+                            <div style={{ display: 'inline-block', marginBottom: 'clamp(0.5rem, 2vw, 1rem)' }}>
+                              <span style={{
+                                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                                backdropFilter: 'blur(12px)',
+                                padding: 'clamp(0.5rem, 1.5vw, 0.75rem) clamp(1rem, 2.5vw, 1.5rem)',
+                                borderRadius: '9999px',
+                                fontSize: 'clamp(0.75rem, 1.8vw, 0.875rem)',
+                                fontWeight: 'bold',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                                animation: 'pulse 2s infinite'
+                              }}>
+                                <Zap style={{ width: 'clamp(0.875rem, 2vw, 1rem)', height: 'clamp(0.875rem, 2vw, 1rem)' }} />
+                                {banner.offer_badge}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Title */}
+                          <h2 style={{
+                            fontSize: 'clamp(1.5rem, 5vw, 3.75rem)',
+                            fontWeight: 'bold',
+                            marginBottom: 'clamp(0.5rem, 2vw, 1rem)',
+                            lineHeight: '1.2'
+                          }}>
+                            {banner.title}
+                          </h2>
+
+                          {/* Subtitle */}
+                          {banner.subtitle && (
+                            <p style={{
+                              fontSize: 'clamp(1rem, 3vw, 1.875rem)',
+                              fontWeight: '600',
+                              marginBottom: 'clamp(0.5rem, 1.5vw, 0.75rem)',
+                              opacity: 0.95
+                            }}>
+                              {banner.subtitle}
+                            </p>
+                          )}
+
+                          {/* Description */}
+                          {banner.description && (
+                            <p style={{
+                              fontSize: 'clamp(0.875rem, 2vw, 1.25rem)',
+                              marginBottom: 'clamp(1rem, 3vw, 2rem)',
+                              opacity: 0.9,
+                              lineHeight: '1.5'
+                            }}>
+                              {banner.description}
+                            </p>
+                          )}
+
+                          {/* CTA Button */}
+                          <button
+                            onClick={() => onNavigate(banner.cta_link.replace('/', ''))}
+                            style={{
+                              backgroundColor: 'white',
+                              color: '#111827',
+                              padding: 'clamp(0.875rem, 2vw, 1.25rem) clamp(1.5rem, 4vw, 2.5rem)',
+                              fontSize: 'clamp(0.875rem, 2vw, 1.125rem)',
+                              fontWeight: 'bold',
+                              borderRadius: '9999px',
+                              border: 'none',
+                              cursor: 'pointer',
+                              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                              transition: 'all 0.3s',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.5rem'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#f3f4f6';
+                              e.currentTarget.style.transform = 'scale(1.05)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'white';
+                              e.currentTarget.style.transform = 'scale(1)';
+                            }}
+                          >
+                            {banner.cta_text}
+                            <ArrowRight style={{ width: 'clamp(1.25rem, 2.5vw, 1.5rem)', height: 'clamp(1.25rem, 2.5vw, 1.5rem)' }} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                ))}
 
-                  {/* Title */}
-                  <h1 style={{
-                    fontSize: 'clamp(1.75rem, 5vw, 3.5rem)',
-                    fontWeight: '700',
-                    marginBottom: '1rem',
-                    lineHeight: '1.2'
+                {/* Navigation Dots */}
+                {banners.length > 1 && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 'clamp(1rem, 2vw, 1.5rem)',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    display: 'flex',
+                    gap: 'clamp(0.5rem, 1.5vw, 0.75rem)',
+                    zIndex: 20
                   }}>
-                    {slide.title}
-                  </h1>
+                    {banners.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentBanner(index)}
+                        style={{
+                          height: 'clamp(0.375rem, 1vw, 0.5rem)',
+                          width: index === currentBanner ? 'clamp(2rem, 5vw, 3rem)' : 'clamp(0.375rem, 1vw, 0.5rem)',
+                          backgroundColor: index === currentBanner ? 'white' : 'rgba(255, 255, 255, 0.5)',
+                          borderRadius: '9999px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (index !== currentBanner) {
+                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.75)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (index !== currentBanner) {
+                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                          }
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
 
-                  {/* Subtitle */}
-                  <p style={{
-                    fontSize: 'clamp(1.125rem, 2.5vw, 1.5rem)',
-                    fontWeight: '500',
-                    marginBottom: '0.75rem',
-                    opacity: 0.95
-                  }}>
-                    {slide.subtitle}
-                  </p>
-
-                  {/* Description */}
-                  <p style={{
-                    fontSize: 'clamp(0.875rem, 1.5vw, 1.125rem)',
-                    marginBottom: '2rem',
-                    opacity: 0.85,
-                    lineHeight: '1.6'
-                  }}>
-                    {slide.description}
-                  </p>
-
-                  {/* CTAs */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                {/* Navigation Arrows */}
+                {banners.length > 1 && (
+                  <>
                     <button
-                      onClick={() => onNavigate('catalog')}
+                      onClick={() => setCurrentBanner((prev) => (prev - 1 + banners.length) % banners.length)}
                       style={{
-                        backgroundColor: 'white',
-                        color: '#111827',
-                        padding: 'clamp(0.875rem, 2vw, 1.125rem) clamp(1.5rem, 3vw, 2.25rem)',
-                        fontSize: 'clamp(0.875rem, 1.5vw, 1rem)',
-                        fontWeight: '600',
+                        position: 'absolute',
+                        left: 'clamp(0.5rem, 1.5vw, 1rem)',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        backdropFilter: 'blur(12px)',
+                        padding: 'clamp(0.5rem, 1.5vw, 0.75rem)',
                         borderRadius: '9999px',
                         border: 'none',
                         cursor: 'pointer',
-                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2)',
                         transition: 'all 0.3s',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.5rem'
+                        zIndex: 20
                       }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f3f4f6';
-                        e.currentTarget.style.transform = 'scale(1.05)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'white';
-                        e.currentTarget.style.transform = 'scale(1)';
-                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'}
                     >
-                      Shop Now
-                      <ArrowRight style={{ width: '1.5rem', height: '1.5rem' }} />
+                      <ChevronLeft style={{ width: 'clamp(1.25rem, 2.5vw, 1.5rem)', height: 'clamp(1.25rem, 2.5vw, 1.5rem)', color: 'white' }} />
                     </button>
                     <button
-                      onClick={() => onNavigate('catalog')}
+                      onClick={() => setCurrentBanner((prev) => (prev + 1) % banners.length)}
                       style={{
-                        backgroundColor: 'transparent',
-                        color: 'white',
-                        padding: '1.25rem 2.5rem',
-                        fontSize: '1.125rem',
-                        fontWeight: 'bold',
+                        position: 'absolute',
+                        right: 'clamp(0.5rem, 1.5vw, 1rem)',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        backdropFilter: 'blur(12px)',
+                        padding: 'clamp(0.5rem, 1.5vw, 0.75rem)',
                         borderRadius: '9999px',
-                        border: '2px solid white',
+                        border: 'none',
                         cursor: 'pointer',
-                        backdropFilter: 'blur(4px)',
                         transition: 'all 0.3s',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.5rem'
+                        zIndex: 20
                       }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'white';
-                        e.currentTarget.style.color = '#111827';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = 'white';
-                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'}
                     >
-                      <Play style={{ width: '1.5rem', height: '1.5rem' }} />
-                      Explore
+                      <ChevronRight style={{ width: 'clamp(1.25rem, 2.5vw, 1.5rem)', height: 'clamp(1.25rem, 2.5vw, 1.5rem)', color: 'white' }} />
                     </button>
-                  </div>
-                </div>
-              </div>
+                  </>
+                )}
             </div>
-          ))}
-
-          {/* Slide Navigation */}
-          <div style={{
-            position: 'absolute',
-            bottom: '2rem',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            display: 'flex',
-            gap: '0.75rem',
-            zIndex: 20
-          }}>
-            {heroSlides.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentSlide(index)}
-                style={{
-                  height: '0.5rem',
-                  width: index === currentSlide ? '4rem' : '0.5rem',
-                  backgroundColor: index === currentSlide ? 'white' : 'rgba(255, 255, 255, 0.5)',
-                  borderRadius: '9999px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s'
-                }}
-                onMouseEnter={(e) => {
-                  if (index !== currentSlide) {
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.75)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (index !== currentSlide) {
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
-                  }
-                }}
-              />
-            ))}
-          </div>
-
-          {/* Navigation Arrows */}
-          <button
-            onClick={() => setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length)}
-            style={{
-              position: 'absolute',
-              left: '1rem',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              backdropFilter: 'blur(12px)',
-              padding: '1rem',
-              borderRadius: '9999px',
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'all 0.3s',
-              zIndex: 20
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'}
-          >
-            <ChevronLeft style={{ width: '1.5rem', height: '1.5rem', color: 'white' }} />
-          </button>
-          <button
-            onClick={() => setCurrentSlide((prev) => (prev + 1) % heroSlides.length)}
-            style={{
-              position: 'absolute',
-              right: '1rem',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              backdropFilter: 'blur(12px)',
-              padding: '1rem',
-              borderRadius: '9999px',
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'all 0.3s',
-              zIndex: 20
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'}
-          >
-            <ChevronRight style={{ width: '1.5rem', height: '1.5rem', color: 'white' }} />
-          </button>
-        </section>
+          </section>
+        )}
 
         {/* Search Bar - Floating */}
         <section style={{ position: 'relative', marginTop: 'clamp(-2rem, -4vw, -3rem)', zIndex: 30, marginBottom: 'clamp(2rem, 4vw, 4rem)' }}>
@@ -623,231 +582,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products }: H
           </div>
         </section>
 
-        {/* Promotional Banners Section */}
-        {!bannersLoading && banners.length > 0 && (
-          <section style={{ padding: '2rem 0' }}>
-            <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1rem' }}>
-              <div style={{ position: 'relative', height: 'clamp(200px, 35vw, 300px)', borderRadius: '1rem', overflow: 'hidden', boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.15)' }}>
-                {banners.map((banner, index) => (
-                  <div
-                    key={banner.id}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      opacity: index === currentBanner ? 1 : 0,
-                      transform: index === currentBanner ? 'scale(1)' : 'scale(1.05)',
-                      transition: 'all 1s',
-                      zIndex: index === currentBanner ? 1 : 0
-                    }}
-                  >
-                    {/* Background Image */}
-                    {banner.image_url && (
-                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-                        <img
-                          src={banner.image_url}
-                          alt={banner.title}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                        <div style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          background: 'linear-gradient(to right, rgba(79, 70, 229, 0.85), rgba(139, 92, 246, 0.85))',
-                          opacity: 0.85
-                        }} />
-                      </div>
-                    )}
-
-                    {/* Content */}
-                    <div style={{ position: 'relative', height: '100%', display: 'flex', alignItems: 'center' }}>
-                      <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1.5rem', width: '100%' }}>
-                        <div style={{ maxWidth: '42rem', color: 'white' }}>
-                          {/* Offer Badge */}
-                          {banner.offer_badge && (
-                            <div style={{ display: 'inline-block', marginBottom: '1rem' }}>
-                              <span style={{
-                                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                                backdropFilter: 'blur(12px)',
-                                padding: '0.75rem 1.5rem',
-                                borderRadius: '9999px',
-                                fontSize: '0.875rem',
-                                fontWeight: 'bold',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.5rem',
-                                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                                animation: 'pulse 2s infinite'
-                              }}>
-                                <Zap style={{ width: '1rem', height: '1rem' }} />
-                                {banner.offer_badge}
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Title */}
-                          <h2 style={{
-                            fontSize: 'clamp(2.25rem, 5vw, 3.75rem)',
-                            fontWeight: 'bold',
-                            marginBottom: '1rem',
-                            lineHeight: '1.2'
-                          }}>
-                            {banner.title}
-                          </h2>
-
-                          {/* Subtitle */}
-                          {banner.subtitle && (
-                            <p style={{
-                              fontSize: 'clamp(1.5rem, 3vw, 1.875rem)',
-                              fontWeight: '600',
-                              marginBottom: '0.75rem',
-                              opacity: 0.95
-                            }}>
-                              {banner.subtitle}
-                            </p>
-                          )}
-
-                          {/* Description */}
-                          {banner.description && (
-                            <p style={{
-                              fontSize: 'clamp(1.125rem, 2vw, 1.25rem)',
-                              marginBottom: '2rem',
-                              opacity: 0.9
-                            }}>
-                              {banner.description}
-                            </p>
-                          )}
-
-                          {/* CTA Button */}
-                          <button
-                            onClick={() => onNavigate(banner.cta_link.replace('/', ''))}
-                            style={{
-                              backgroundColor: 'white',
-                              color: '#111827',
-                              padding: '1.25rem 2.5rem',
-                              fontSize: '1.125rem',
-                              fontWeight: 'bold',
-                              borderRadius: '9999px',
-                              border: 'none',
-                              cursor: 'pointer',
-                              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                              transition: 'all 0.3s',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.5rem'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = '#f3f4f6';
-                              e.currentTarget.style.transform = 'scale(1.05)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = 'white';
-                              e.currentTarget.style.transform = 'scale(1)';
-                            }}
-                          >
-                            {banner.cta_text}
-                            <ArrowRight style={{ width: '1.5rem', height: '1.5rem' }} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Navigation Dots */}
-                {banners.length > 1 && (
-                  <div style={{
-                    position: 'absolute',
-                    bottom: '1.5rem',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    display: 'flex',
-                    gap: '0.75rem',
-                    zIndex: 20
-                  }}>
-                    {banners.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentBanner(index)}
-                        style={{
-                          height: '0.5rem',
-                          width: index === currentBanner ? '3rem' : '0.5rem',
-                          backgroundColor: index === currentBanner ? 'white' : 'rgba(255, 255, 255, 0.5)',
-                          borderRadius: '9999px',
-                          border: 'none',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s'
-                        }}
-                        onMouseEnter={(e) => {
-                          if (index !== currentBanner) {
-                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.75)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (index !== currentBanner) {
-                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
-                          }
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                {/* Navigation Arrows */}
-                {banners.length > 1 && (
-                  <>
-                    <button
-                      onClick={() => setCurrentBanner((prev) => (prev - 1 + banners.length) % banners.length)}
-                      style={{
-                        position: 'absolute',
-                        left: '1rem',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                        backdropFilter: 'blur(12px)',
-                        padding: '0.75rem',
-                        borderRadius: '9999px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s',
-                        zIndex: 20
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'}
-                    >
-                      <ChevronLeft style={{ width: '1.5rem', height: '1.5rem', color: 'white' }} />
-                    </button>
-                    <button
-                      onClick={() => setCurrentBanner((prev) => (prev + 1) % banners.length)}
-                      style={{
-                        position: 'absolute',
-                        right: '1rem',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                        backdropFilter: 'blur(12px)',
-                        padding: '0.75rem',
-                        borderRadius: '9999px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s',
-                        zIndex: 20
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'}
-                    >
-                      <ChevronRight style={{ width: '1.5rem', height: '1.5rem', color: 'white' }} />
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </section>
-        )}
+       
 
         {/* Stats Section */}
         <section style={{ padding: 'clamp(2.5rem, 5vw, 4rem) 0', background: 'linear-gradient(to bottom, #f9fafb, white)' }}>
@@ -1035,7 +770,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products }: H
                         transition: 'opacity 0.3s'
                       }} />
                     </div>
-                    
+
                     {/* Content Overlay */}
                     <div style={{
                       position: 'absolute',
@@ -1199,8 +934,8 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products }: H
                         opacity: 0,
                         transition: 'all 0.3s'
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-                      onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
+                        onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                        onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
                       >
                         <Heart style={{ width: '1.5rem', height: '1.5rem', color: '#ef4444' }} />
                       </div>
@@ -1214,8 +949,8 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products }: H
                         opacity: 0,
                         transition: 'opacity 0.3s'
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-                      onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
+                        onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                        onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
                       >
                         <button style={{
                           width: '100%',
@@ -1228,8 +963,8 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products }: H
                           cursor: 'pointer',
                           transition: 'background-color 0.2s'
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
                         >
                           Quick View
                         </button>
@@ -1247,8 +982,8 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products }: H
                         WebkitBoxOrient: 'vertical',
                         transition: 'color 0.3s'
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.color = '#4f46e5'}
-                      onMouseLeave={(e) => e.currentTarget.style.color = '#111827'}
+                        onMouseEnter={(e) => e.currentTarget.style.color = '#4f46e5'}
+                        onMouseLeave={(e) => e.currentTarget.style.color = '#111827'}
                       >
                         {product.name}
                       </h3>
@@ -1576,8 +1311,8 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products }: H
                       WebkitBoxOrient: 'vertical',
                       transition: 'color 0.3s'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#4f46e5'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#111827'}
+                      onMouseEnter={(e) => e.currentTarget.style.color = '#4f46e5'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = '#111827'}
                     >
                       {product.name}
                     </h3>
@@ -1652,14 +1387,14 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products }: H
                       boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
                       transition: 'all 0.3s'
                     }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.25)';
-                      e.currentTarget.style.transform = 'rotate(6deg)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
-                      e.currentTarget.style.transform = 'rotate(0deg)';
-                    }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.25)';
+                        e.currentTarget.style.transform = 'rotate(6deg)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
+                        e.currentTarget.style.transform = 'rotate(0deg)';
+                      }}
                     >
                       <Icon style={{ width: 'clamp(2rem, 5vw, 2.5rem)', height: 'clamp(2rem, 5vw, 2.5rem)', color: 'white' }} />
                     </div>
@@ -1893,7 +1628,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products }: H
             <div style={{ position: 'absolute', top: 0, left: 0, width: '24rem', height: '24rem', backgroundColor: '#6366f1', borderRadius: '9999px', filter: 'blur(48px)' }} />
             <div style={{ position: 'absolute', bottom: 0, right: 0, width: '24rem', height: '24rem', backgroundColor: '#a855f7', borderRadius: '9999px', filter: 'blur(48px)' }} />
           </div>
-          
+
           <div style={{ position: 'relative', maxWidth: '64rem', margin: '0 auto', padding: '0 1rem', textAlign: 'center' }}>
             <h2 style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: '700', marginBottom: '1.5rem', lineHeight: '1.2' }}>
               Ready to Start Shopping?
@@ -1995,7 +1730,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products }: H
                 </div>
               </div>
             </div>
-            
+
             <div style={{ borderTop: '1px solid #1f2937', marginTop: '3rem', paddingTop: '3rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'center', gap: '1.5rem' }} className="md:flex-row">
                 <p style={{ color: '#9ca3af' }}>

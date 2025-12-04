@@ -90,7 +90,7 @@ export function AuthModal({ mode, onClose, onLogin, onRegister, onSwitchMode }: 
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="pl-10"
+                  className="!pl-10"
                   placeholder="Enter your name"
                   required
                 />

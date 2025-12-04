@@ -794,7 +794,10 @@ export const bannerService = {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Create banner error:', error);
+      throw error;
+    }
     return data as HeroBanner;
   },
 
@@ -807,7 +810,10 @@ export const bannerService = {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Update banner error:', error);
+      throw error;
+    }
     return data as HeroBanner;
   },
 

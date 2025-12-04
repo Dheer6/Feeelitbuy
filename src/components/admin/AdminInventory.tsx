@@ -5,7 +5,7 @@ import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Label } from '../ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { 
   Package, 
   AlertTriangle, 
@@ -325,6 +325,9 @@ export function AdminInventory({ products, onUpdateStock }: AdminInventoryProps)
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Update Inventory - {editingProduct?.name}</DialogTitle>
+            <DialogDescription>
+              Adjust stock levels and manage inventory for this product
+            </DialogDescription>
           </DialogHeader>
           {editingProduct && (
             <div className="space-y-6">
