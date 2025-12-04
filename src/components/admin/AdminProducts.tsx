@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Edit, Trash2, Plus, Search, Loader2 } from 'lucide-react';
 import { Product } from '../../types';
 import { Card } from '../ui/card';
@@ -14,9 +14,10 @@ import {
   TableRow,
 } from '../ui/table';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
-import { productService } from '../../lib/supabaseService';
+import { productService, categoryService } from '../../lib/supabaseService';
 import { productImageService } from '../../lib/supabaseEnhanced';
 import { formatINR } from '../../lib/currency';
+import type { Category } from '../../lib/supabase';
 import {
   Dialog,
   DialogContent,
@@ -39,18 +40,32 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
   const [deleting, setDeleting] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showDialog, setShowDialog] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     price: 0,
     stock: 0,
-    category: 'electronics',
+    category_id: '',
     brand: '',
     image_urls: [''],
     discountType: 'none' as 'none' | 'percentage' | 'amount',
     discountValue: 0,
   });
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      const cats = await categoryService.getCategories();
+      setCategories(cats);
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+    }
+  };
 
   const handleAdd = () => {
     setEditingProduct(null);
@@ -59,7 +74,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
       description: '',
       price: 0,
       stock: 0,
-      category: 'electronics',
+      category_id: categories.length > 0 ? categories[0].id : '',
       brand: '',
       image_urls: [''],
       discountType: 'none',
@@ -88,8 +103,8 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
       description: product.description || '',
       price: product.price,
       stock: product.stock,
-      category: product.category,
-      brand: product.brand,
+      category_id: product.category_id || (categories.length > 0 ? categories[0].id : ''),
+      brand: product.brand || '',
       image_urls: product.images.length > 0 ? product.images : [''],
       discountType,
       discountValue,
@@ -128,6 +143,8 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
           description: formData.description,
           price: formData.price,
           stock: formData.stock,
+          category_id: formData.category_id,
+          brand: formData.brand,
           discount: discount > 0 ? discount : undefined,
           original_price: discount > 0 ? originalPrice : undefined,
         } as any);
@@ -145,7 +162,8 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
           description: formData.description,
           price: formData.price,
           stock: formData.stock,
-          category_id: null, // You might need to map category to category_id
+          category_id: formData.category_id,
+          brand: formData.brand,
           is_featured: false,
           discount: discount > 0 ? discount : undefined,
           original_price: discount > 0 ? originalPrice : undefined,
@@ -462,12 +480,13 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
                 <Label htmlFor="category">Category</Label>
                 <select
                   id="category"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  value={formData.category_id}
+                  onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 >
-                  <option value="electronics">Electronics</option>
-                  <option value="furniture">Furniture</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
                 </select>
               </div>
               <div>

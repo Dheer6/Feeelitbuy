@@ -300,19 +300,24 @@ export function ProductDetail({
               <p className="text-gray-600 text-sm">{product.reviewCount} reviews</p>
             </div>
             <div className="flex-1">
-              {[5, 4, 3, 2, 1].map((rating) => (
-                <div key={rating} className="flex items-center gap-3 mb-2">
-                  <span className="text-sm w-8">{rating}★</span>
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-yellow-400 h-2 rounded-full"
-                      style={{
-                        width: `${Math.random() * 80 + 20}%`,
-                      }}
-                    />
+              {[5, 4, 3, 2, 1].map((rating) => {
+                const count = reviews.filter((r: any) => r.rating === rating).length;
+                const percentage = product.reviewCount > 0 ? (count / product.reviewCount) * 100 : 0;
+                return (
+                  <div key={rating} className="flex items-center gap-3 mb-2">
+                    <span className="text-sm w-8">{rating}★</span>
+                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-yellow-400 h-2 rounded-full transition-all duration-300"
+                        style={{
+                          width: `${percentage}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-xs text-gray-500 w-8 text-right">{count}</span>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
           {/* Review Form with Star Rating */}

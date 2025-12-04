@@ -31,7 +31,7 @@ export function ProductCatalog({
 }: ProductCatalogProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('featured');
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 2000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedRating, setSelectedRating] = useState<number>(0);
@@ -135,7 +135,7 @@ export function ProductCatalog({
 
   const clearAllFilters = () => {
     setSearchQuery('');
-    setPriceRange([0, 2000]);
+    setPriceRange([0, 100000]);
     setSelectedBrands([]);
     setSelectedRating(0);
     setInStock(false);
@@ -287,8 +287,8 @@ export function ProductCatalog({
                   <Input
                     type="range"
                     min="0"
-                    max="2000"
-                    step="50"
+                    max="100000"
+                    step="1000"
                     value={priceRange[1]}
                     onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
                     className="w-full"
@@ -305,7 +305,7 @@ export function ProductCatalog({
                 <Label className="mb-3 block font-semibold">Customer Rating</Label>
                 <div className="space-y-2">
                   {[4, 3, 2, 1].map((rating) => (
-                    <div key={rating} className="flex items-center">
+                    <div key={rating} className="flex items-center gap-2">
                       <Checkbox
                         id={`rating-${rating}`}
                         checked={selectedRating === rating}
@@ -313,18 +313,21 @@ export function ProductCatalog({
                       />
                       <label
                         htmlFor={`rating-${rating}`}
-                        className="ml-2 text-sm cursor-pointer flex items-center"
+                        className="flex items-center gap-1 cursor-pointer text-sm"
                       >
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${i < rating
-                                ? 'fill-yellow-400 text-yellow-400'
-                                : 'fill-gray-300 text-gray-300'
+                        <div className="flex items-center">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-4 h-4 ${
+                                i < rating
+                                  ? 'fill-yellow-400 text-yellow-400'
+                                  : 'fill-gray-300 text-gray-300'
                               }`}
-                          />
-                        ))}
-                        <span className="ml-1">& Up</span>
+                            />
+                          ))}
+                        </div>
+                        <span className="text-gray-600">& Up</span>
                       </label>
                     </div>
                   ))}

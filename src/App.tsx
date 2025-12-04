@@ -44,6 +44,11 @@ export default function App() {
   const [wishlistHydrated, setWishlistHydrated] = useState(false);
   const [ordersHydrated, setOrdersHydrated] = useState(false);
 
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
+
   // Check for existing session on mount
   useEffect(() => {
     checkUser();
@@ -809,7 +814,7 @@ export default function App() {
         currentPage={currentPage}
       />
 
-      <main className="pt-16 pb-20 lg:pb-0">
+      <main className="pt-16 pb-24 md:pb-8">
         {productsLoading && (
           <div className="container mx-auto px-4 py-4 text-sm text-gray-500">Loading products...</div>
         )}

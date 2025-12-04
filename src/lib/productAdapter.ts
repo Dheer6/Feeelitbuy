@@ -15,6 +15,8 @@ interface DbProductRow {
   reviews_count?: number;
   is_featured?: boolean;
   category_id?: string;
+  category?: string;
+  brand?: string;
   // categories relationship when selected: categories?: { id: string; name: string };
   categories?: { id: string; name: string } | null;
   product_images?: {
@@ -73,9 +75,11 @@ export async function adaptDbProduct(db: DbProductRow): Promise<Product> {
     description: db.description || 'No description provided yet.',
     price,
     originalPrice,
-    category: mapCategory(db.categories?.name),
+    // Prefer joined category name, fallback to text `category` column if relation missing
+    category: mapCategory(db.categories?.name ?? db.category),
+    category_id: db.category_id,
     subcategory: 'general',
-    brand: 'Generic',
+    brand: db.brand || 'Generic',
     images,
     specifications: {},
     stock: db.stock ?? 100, // Use DB stock or fallback to 100
@@ -103,7 +107,8 @@ export async function adaptDbProducts(rows: DbProductRow[]): Promise<Product[]> 
         description: row.description || '',
         price: row.price,
         originalPrice: row.price * 1.2,
-        category: mapCategory(row.categories?.name),
+        category: mapCategory(row.categories?.name ?? row.category),
+        category_id: row.category_id,
         subcategory: 'general',
         brand: 'Generic',
         images: [PLACEHOLDER_IMAGE],

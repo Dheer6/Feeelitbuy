@@ -6,6 +6,7 @@ export interface Product {
   originalPrice?: number;
   discount?: number; // Discount percentage (0-100)
   category: 'electronics' | 'furniture';
+  category_id?: string;
   subcategory: string;
   brand: string;
   images: string[];

@@ -62,8 +62,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "your-project-id-here"
+        "projectId": "653ff95d-f608-4398-9292-5ab7822af328"
       }
-    }
+    },
+    "owner": "srujank21"
   }
 }
