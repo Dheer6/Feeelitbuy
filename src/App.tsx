@@ -48,6 +48,53 @@ export default function App() {
   const [wishlistHydrated, setWishlistHydrated] = useState(false);
   const [ordersHydrated, setOrdersHydrated] = useState(false);
 
+  // Sync URL with current page on mount and handle browser navigation
+  useEffect(() => {
+    // Read initial page from URL
+    const path = window.location.pathname;
+    const initialPage = path === '/' || path === '' ? 'home' : path.substring(1);
+    if (initialPage !== currentPage) {
+      setCurrentPage(initialPage);
+    }
+
+    // Handle browser back/forward buttons
+    const handlePopState = (event: PopStateEvent) => {
+      const page = event.state?.page || 'home';
+      setCurrentPage(page);
+      if (event.state?.category) {
+        setSelectedCategory(event.state.category);
+      }
+      if (event.state?.searchQuery) {
+        setSearchQuery(event.state.searchQuery);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    
+    // Set initial state
+    window.history.replaceState(
+      { page: currentPage, category: selectedCategory, searchQuery },
+      '',
+      `/${currentPage === 'home' ? '' : currentPage}`
+    );
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
+  // Update URL when page changes
+  useEffect(() => {
+    if (currentPage) {
+      const url = currentPage === 'home' ? '/' : `/${currentPage}`;
+      window.history.pushState(
+        { page: currentPage, category: selectedCategory, searchQuery },
+        '',
+        url
+      );
+    }
+  }, [currentPage, selectedCategory, searchQuery]);
+
   // Scroll to top when page changes
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -86,7 +133,7 @@ export default function App() {
                 role: profile.role,
                 createdAt: profile.created_at,
               });
-              if (profile.role === 'admin') setCurrentPage('admin');
+              if (profile.role === 'admin') navigateToPage('admin');
               return; // success
             }
           } catch (err) {
@@ -643,13 +690,13 @@ export default function App() {
 
   const handleViewProduct = (product: Product) => {
     setSelectedProduct(product);
-    setCurrentPage('product-detail');
+    navigateToPage('product-detail');
   };
 
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(category);
     setSearchQuery(''); // Clear search when changing category
-    setCurrentPage('catalog');
+    navigateToPage('catalog');
   };
 
   const handleSearch = (query: string) => {
@@ -657,12 +704,16 @@ export default function App() {
     setSelectedCategory('all'); // Reset category when searching
   };
 
+  const navigateToPage = (page: string) => {
+    setCurrentPage(page);
+  };
+
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
         return (
           <Home
-            onNavigate={setCurrentPage}
+            onNavigate={navigateToPage}
             onCategoryClick={handleCategoryClick}
             onViewProduct={handleViewProduct}
             products={products}
@@ -690,13 +741,13 @@ export default function App() {
               // Set buy now items as a separate cart
               setBuyNowItems([{ product, quantity, itemId: `buy-now-${product.id}` }]);
               if (currentUser) {
-                setCurrentPage('checkout');
+                navigateToPage('checkout');
               } else {
                 setAuthMode('login');
                 setShowAuthModal(true);
               }
             }}
-            onBack={() => setCurrentPage('catalog')}
+            onBack={() => navigateToPage('catalog')}
             isWishlisted={wishlist.includes(selectedProduct.id)}
             onToggleWishlist={toggleWishlist}
           />
@@ -712,7 +763,7 @@ export default function App() {
               toggleWishlist(product.id); // Remove from wishlist after adding to cart
             }}
             onViewProduct={handleViewProduct}
-            onContinueShopping={() => setCurrentPage('catalog')}
+            onContinueShopping={() => navigateToPage('catalog')}
           />
         );
       case 'cart':
@@ -728,10 +779,10 @@ export default function App() {
                 setAuthMode('login');
                 setShowAuthModal(true);
               } else {
-                setCurrentPage('checkout');
+                navigateToPage('checkout');
               }
             }}
-            onContinueShopping={() => setCurrentPage('catalog')}
+            onContinueShopping={() => navigateToPage('catalog')}
             onViewProduct={handleViewProduct}
           />
         );
@@ -740,7 +791,7 @@ export default function App() {
           <Checkout
             items={buyNowItems.length > 0 ? buyNowItems : cart}
             onPlaceOrder={placeOrder}
-            onBack={() => setCurrentPage(buyNowItems.length > 0 ? 'product-detail' : 'cart')}
+            onBack={() => navigateToPage(buyNowItems.length > 0 ? 'product-detail' : 'cart')}
             user={currentUser}
           />
         );
@@ -750,11 +801,11 @@ export default function App() {
             orderId={completedOrderId}
             onTrackOrder={() => {
               setSelectedOrder(completedOrderId);
-              setCurrentPage('order-tracking');
+              navigateToPage('order-tracking');
             }}
             onContinueShopping={() => {
               setCompletedOrderId(null);
-              setCurrentPage('catalog');
+              navigateToPage('catalog');
             }}
           />
         ) : null;
@@ -772,7 +823,7 @@ export default function App() {
         if (!currentUser) {
           setAuthMode('login');
           setShowAuthModal(true);
-          setCurrentPage('home');
+          navigateToPage('home');
           return null;
         }
         return (
@@ -781,7 +832,7 @@ export default function App() {
             orders={orders}
             onViewOrder={(orderId) => {
               setSelectedOrder(orderId);
-              setCurrentPage('order-tracking');
+              navigateToPage('order-tracking');
             }}
           />
         );
@@ -815,7 +866,7 @@ export default function App() {
             <div className="container mx-auto px-4 py-16 text-center">
               <p className="text-red-600">Access Denied. Admin privileges required.</p>
               <p className="text-sm text-gray-500 mt-2">Current role: {currentUser.role}</p>
-              <Button onClick={() => setCurrentPage('home')} className="mt-4">
+              <Button onClick={() => navigateToPage('home')} className="mt-4">
                 Go to Home
               </Button>
             </div>
@@ -852,7 +903,7 @@ export default function App() {
         currentUser={currentUser}
         cartItemCount={cart.reduce((sum: number, item: CartItem) => sum + item.quantity, 0)}
         wishlistCount={wishlist.length}
-        onNavigate={setCurrentPage}
+        onNavigate={navigateToPage}
         onAuthClick={() => {
           setAuthMode('login');
           setShowAuthModal(true);
@@ -903,7 +954,7 @@ export default function App() {
             setAuthMode('login');
             setShowAuthModal(true);
           } else {
-            setCurrentPage(page);
+            navigateToPage(page);
           }
         }}
       />

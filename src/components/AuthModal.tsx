@@ -84,7 +84,7 @@ export function AuthModal({ mode, onClose, onLogin, onRegister, onSwitchMode }: 
             <div>
               <Label htmlFor="name">Full Name</Label>
               <div className="relative mt-1">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                {/* <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" /> */}
                 <Input
                   id="name"
                   type="text"
@@ -101,7 +101,7 @@ export function AuthModal({ mode, onClose, onLogin, onRegister, onSwitchMode }: 
           <div>
             <Label htmlFor="email">Email</Label>
             <div className="relative mt-1">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              {/* <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" /> */}
               <Input
                 id="email"
                 type="email"
@@ -118,7 +118,7 @@ export function AuthModal({ mode, onClose, onLogin, onRegister, onSwitchMode }: 
             <div>
               <Label htmlFor="phone">Phone Number</Label>
               <div className="relative mt-1">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                {/* <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" /> */}
                 <Input
                   id="phone"
                   type="tel"
@@ -135,7 +135,7 @@ export function AuthModal({ mode, onClose, onLogin, onRegister, onSwitchMode }: 
           <div>
             <Label htmlFor="password">Password</Label>
             <div className="relative mt-1">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              {/* <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" /> */}
               <Input
                 id="password"
                 type="password"
@@ -152,7 +152,7 @@ export function AuthModal({ mode, onClose, onLogin, onRegister, onSwitchMode }: 
             <div>
               <Label htmlFor="confirmPassword">Confirm Password</Label>
               <div className="relative mt-1">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                {/* <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" /> */}
                 <Input
                   id="confirmPassword"
                   type="password"
