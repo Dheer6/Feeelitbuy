@@ -25,6 +25,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<string>('home');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSignupSuccess, setShowSignupSuccess] = useState(false);
@@ -647,7 +648,13 @@ export default function App() {
 
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(category);
+    setSearchQuery(''); // Clear search when changing category
     setCurrentPage('catalog');
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    setSelectedCategory('all'); // Reset category when searching
   };
 
   const renderPage = () => {
@@ -659,6 +666,7 @@ export default function App() {
             onCategoryClick={handleCategoryClick}
             onViewProduct={handleViewProduct}
             products={products}
+            onSearch={handleSearch}
           />
         );
       case 'catalog':
@@ -670,6 +678,7 @@ export default function App() {
             wishlist={wishlist}
             onToggleWishlist={toggleWishlist}
             onCategoryChange={setSelectedCategory}
+            initialSearch={searchQuery}
           />
         );
       case 'product-detail':

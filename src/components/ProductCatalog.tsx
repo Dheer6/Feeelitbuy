@@ -19,6 +19,7 @@ interface ProductCatalogProps {
   wishlist: string[];
   onToggleWishlist: (productId: string) => void;
   onCategoryChange?: (category: string) => void;
+  initialSearch?: string;
 }
 
 export function ProductCatalog({
@@ -28,8 +29,9 @@ export function ProductCatalog({
   wishlist,
   onToggleWishlist,
   onCategoryChange,
+  initialSearch = '',
 }: ProductCatalogProps) {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [sortBy, setSortBy] = useState('featured');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);

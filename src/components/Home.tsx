@@ -55,9 +55,10 @@ interface HomeProps {
   onViewProduct: (product: Product) => void;
   products: Product[];
   onAddToCart?: (product: Product) => void;
+  onSearch?: (query: string) => void;
 }
 
-export function Home({ onNavigate, onCategoryClick, onViewProduct, products }: HomeProps) {
+export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onSearch }: HomeProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [email, setEmail] = useState('');
@@ -303,6 +304,18 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products }: H
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleSearch = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (searchQuery.trim()) {
+      if (onSearch) {
+        onSearch(searchQuery.trim());
+      }
+      onNavigate('catalog');
+    } else {
+      onNavigate('catalog');
+    }
+  };
+
   return (
     <>
       <div className="home-landing-page min-h-screen bg-white">
@@ -538,7 +551,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products }: H
         <section style={{ position: 'relative', marginTop: 'clamp(-2rem, -4vw, -3rem)', zIndex: 30, marginBottom: 'clamp(2rem, 4vw, 4rem)' }}>
           <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1rem' }}>
             <div style={{ padding: 'clamp(1rem, 2vw, 1.5rem)', boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.15)', backgroundColor: 'white', borderRadius: '1rem', border: 'none' }}>
-              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <form onSubmit={handleSearch} style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', width: '100%' }}>
                 <div style={{ position: 'relative', flex: '1', minWidth: '250px' }}>
                   <Search style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', width: '1.5rem', height: '1.5rem' }} />
                   <input
@@ -563,7 +576,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products }: H
                   />
                 </div>
                 <button
-                  onClick={() => onNavigate('catalog')}
+                  type="submit"
                   style={{
                     backgroundColor: '#4f46e5',
                     color: 'white',
@@ -582,7 +595,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products }: H
                 >
                   Search
                 </button>
-              </div>
+              </form>
             </div>
           </div>
         </section>
