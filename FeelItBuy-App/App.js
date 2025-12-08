@@ -6,8 +6,8 @@ import {
   ActivityIndicator,
   Platform,
   Alert,
+  SafeAreaView,
 } from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
@@ -61,7 +61,7 @@ export default function App() {
       if (webViewRef.current) {
         webViewRef.current.stopLoading();
         WebBrowser.openBrowserAsync(navState.url);
-        
+
         // Go back to previous page
         if (canGoBack) {
           webViewRef.current.goBack();
@@ -171,22 +171,19 @@ export default function App() {
 
   if (hasError) {
     return (
-      <SafeAreaProvider>
-        <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-          <StatusBar style="auto" />
-          <ErrorScreen onRetry={handleRetry} />
-        </SafeAreaView>
-      </SafeAreaProvider>
+      <SafeAreaView style={styles.container}>
+        <StatusBar style="auto" />
+        <ErrorScreen onRetry={handleRetry} />
+      </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaProvider>
-      <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-        <StatusBar style="auto" />
-        {isLoading && <LoadingScreen progress={loadProgress} />}
+    <SafeAreaView style={styles.container}>
+      <StatusBar style="auto" />
+      {isLoading && <LoadingScreen progress={loadProgress} />}
 
-        <WebView
+      <WebView
         ref={webViewRef}
         source={{ uri: WEBSITE_URL }}
         style={styles.webview}
@@ -232,9 +229,8 @@ export default function App() {
         // Performance
         startInLoadingState={false}
         renderLoading={() => null}
-        />
-      </SafeAreaView>
-    </SafeAreaProvider>
+      />
+    </SafeAreaView>
   );
 }
 
@@ -242,6 +238,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
+    paddingTop: Platform.OS === 'android' ? 30 : 0,
+    paddingBottom: Platform.OS === 'android' ? 30 : 0,
   },
   webview: {
     flex: 1,

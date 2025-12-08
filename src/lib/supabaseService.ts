@@ -452,6 +452,24 @@ export const orderService = {
     if (error) throw error;
     return data;
   },
+
+  // Check if user has purchased a specific product
+  async hasUserPurchasedProduct(userId: string, productId: string): Promise<boolean> {
+    const { data, error } = await supabase
+      .from('order_items')
+      .select('id, orders!inner(user_id, status)')
+      .eq('product_id', productId)
+      .eq('orders.user_id', userId)
+      .in('orders.status', ['pending', 'processing', 'shipped', 'delivered'])
+      .limit(1);
+
+    if (error) {
+      console.error('Error checking purchase history:', error);
+      return false;
+    }
+
+    return data && data.length > 0;
+  },
 };
 
 // ==================== ADDRESS SERVICES ====================
@@ -605,36 +623,137 @@ export const reviewService = {
   async getProductReviews(productId: string) {
     const { data, error } = await supabase
       .from('reviews')
-      .select('*, profiles(full_name)')
+      .select('id, product_id, user_id, rating, comment, created_at, images, profiles(full_name)')
       .eq('product_id', productId)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching reviews:', error);
+      throw error;
+    }
+    
+    console.log('Fetched reviews:', data);
     return data;
   },
 
   // Create review
-  async createReview(productId: string, rating: number, comment: string) {
+  async createReview(productId: string, rating: number, comment: string, imageUrls?: string[]) {
     const user = await authService.getCurrentUser();
     if (!user) throw new Error('Not authenticated');
 
-    const { data, error } = await supabase
-      .from('reviews')
-      .insert({
-        product_id: productId,
-        user_id: user.id,
-        rating,
-        comment,
-      })
-      .select('*, profiles(full_name)')
-      .single();
+    // Try with images first, fallback to without images if schema cache issue
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .insert({
+          product_id: productId,
+          user_id: user.id,
+          rating,
+          comment,
+          images: imageUrls || [],
+        })
+        .select('*, profiles(full_name)')
+        .single();
 
-    if (error) throw error;
+      if (error) {
+        // If schema cache error, try without images field
+        if (error.code === 'PGRST204' || error.message?.includes('schema cache')) {
+          console.warn('Schema cache issue, inserting without images field');
+          const { data: dataNoImages, error: errorNoImages } = await supabase
+            .from('reviews')
+            .insert({
+              product_id: productId,
+              user_id: user.id,
+              rating,
+              comment,
+            })
+            .select('*, profiles(full_name)')
+            .single();
+          
+          if (errorNoImages) throw errorNoImages;
+          
+          // If we have images and the review was created, update it with images using SQL
+          if (imageUrls && imageUrls.length > 0 && dataNoImages) {
+            const { error: updateError } = await supabase.rpc('update_review_images', {
+              review_id: dataNoImages.id,
+              image_urls: imageUrls
+            });
+            
+            if (updateError) {
+              console.warn('Could not add images to review:', updateError);
+            }
+          }
+          
+          // Update product rating
+          await this.updateProductRating(productId);
+          return dataNoImages;
+        }
+        throw error;
+      }
 
-    // Update product rating
-    await this.updateProductRating(productId);
+      // Update product rating
+      await this.updateProductRating(productId);
+      return data;
+    } catch (err) {
+      console.error('Create review error:', err);
+      throw err;
+    }
+  },
 
-    return data;
+  // Upload review image to storage
+  async uploadReviewImage(file: File, userId: string): Promise<string> {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${userId}_${Date.now()}.${fileExt}`;
+      const filePath = `review-images/${fileName}`;
+
+      console.log('Starting image upload:', { 
+        fileName, 
+        fileExt, 
+        size: file.size, 
+        type: file.type,
+        path: filePath
+      });
+
+      // Verify bucket exists and is accessible
+      const { data: buckets } = await supabase.storage.listBuckets();
+      console.log('Available buckets:', buckets?.map(b => b.name));
+      
+      const reviewBucket = buckets?.find(b => b.id === 'reviews');
+      if (!reviewBucket) {
+        throw new Error('Reviews bucket not found in list. Available buckets: ' + buckets?.map(b => b.name).join(', '));
+      }
+      console.log('Found reviews bucket:', reviewBucket);
+
+      const { data, error: uploadError } = await supabase.storage
+        .from('reviews')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Upload error details:', {
+          message: uploadError.message,
+          status: uploadError.status,
+          statusCode: (uploadError as any).statusCode,
+          error: uploadError
+        });
+        throw uploadError;
+      }
+
+      console.log('Upload successful:', data);
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('reviews')
+        .getPublicUrl(filePath);
+
+      console.log('Public URL generated:', publicUrl);
+      return publicUrl;
+    } catch (err) {
+      console.error('Review image upload failed:', err);
+      throw err;
+    }
   },
 
   // Update review
@@ -840,3 +959,529 @@ export const bannerService = {
     return data as HeroBanner;
   },
 };
+
+// ==================== WALLET SERVICES ====================
+
+export const walletService = {
+  // Get or create wallet for user
+  async getWallet() {
+    const user = await authService.getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
+
+    let { data: wallet, error } = await supabase
+      .from('wallets')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    // Create wallet if doesn't exist
+    if (error && error.code === 'PGRST116') {
+      const { data: newWallet, error: createError } = await supabase
+        .from('wallets')
+        .insert({ user_id: user.id })
+        .select()
+        .single();
+      
+      if (createError) throw createError;
+      wallet = newWallet;
+    } else if (error) {
+      throw error;
+    }
+
+    return wallet;
+  },
+
+  // Get wallet transactions
+  async getTransactions(limit = 50) {
+    const wallet = await this.getWallet();
+    
+    const { data, error } = await supabase
+      .from('wallet_transactions')
+      .select('*')
+      .eq('wallet_id', wallet.id)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Add funds to wallet
+  async addFunds(amount: number, type: string, description: string, referenceId?: string) {
+    const wallet = await this.getWallet();
+    
+    // Create transaction
+    const { error: txnError } = await supabase
+      .from('wallet_transactions')
+      .insert({
+        wallet_id: wallet.id,
+        type,
+        amount,
+        description,
+        reference_id: referenceId,
+      });
+
+    if (txnError) throw txnError;
+
+    // Update wallet balance
+    const newBalance = parseFloat(wallet.balance) + amount;
+    const updates: any = { balance: newBalance };
+
+    if (type === 'referral_bonus') {
+      updates.referral_amount = parseFloat(wallet.referral_amount) + amount;
+    } else if (type === 'reward') {
+      updates.reward_amount = parseFloat(wallet.reward_amount) + amount;
+    }
+
+    const { error: updateError } = await supabase
+      .from('wallets')
+      .update(updates)
+      .eq('id', wallet.id);
+
+    if (updateError) throw updateError;
+    
+    return await this.getWallet();
+  },
+
+  // Deduct funds from wallet
+  async deductFunds(amount: number, description: string, referenceId?: string) {
+    const wallet = await this.getWallet();
+    
+    if (parseFloat(wallet.balance) < amount) {
+      throw new Error('Insufficient wallet balance');
+    }
+
+    // Create transaction
+    const { error: txnError } = await supabase
+      .from('wallet_transactions')
+      .insert({
+        wallet_id: wallet.id,
+        type: 'debit',
+        amount: -amount,
+        description,
+        reference_id: referenceId,
+      });
+
+    if (txnError) throw txnError;
+
+    // Update balance
+    const { error: updateError } = await supabase
+      .from('wallets')
+      .update({ balance: parseFloat(wallet.balance) - amount })
+      .eq('id', wallet.id);
+
+    if (updateError) throw updateError;
+    
+    return await this.getWallet();
+  },
+};
+
+// ==================== REFERRAL SERVICES ====================
+
+export const referralService = {
+  // Generate referral code for user
+  async generateCode() {
+    const user = await authService.getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
+
+    // Check if code exists
+    let { data: existing } = await supabase
+      .from('referral_codes')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (existing) return existing;
+
+    // Generate unique code
+    const code = `FEEL${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+    const { data, error } = await supabase
+      .from('referral_codes')
+      .insert({ user_id: user.id, code })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Apply referral code
+  async applyReferralCode(code: string) {
+    const user = await authService.getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
+
+    // Check if user already used a referral
+    const { data: existing } = await supabase
+      .from('referrals')
+      .select('*')
+      .eq('referee_id', user.id)
+      .single();
+
+    if (existing) {
+      throw new Error('You have already used a referral code');
+    }
+
+    // Get referral code details
+    const { data: refCode, error: codeError } = await supabase
+      .from('referral_codes')
+      .select('*')
+      .eq('code', code)
+      .single();
+
+    if (codeError || !refCode) {
+      throw new Error('Invalid referral code');
+    }
+
+    if (refCode.user_id === user.id) {
+      throw new Error('You cannot use your own referral code');
+    }
+
+    // Create referral record
+    const { data: referral, error } = await supabase
+      .from('referrals')
+      .insert({
+        referrer_id: refCode.user_id,
+        referee_id: user.id,
+        referral_code: code,
+        status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Update code usage count
+    await supabase
+      .from('referral_codes')
+      .update({ uses_count: refCode.uses_count + 1 })
+      .eq('id', refCode.id);
+
+    return referral;
+  },
+
+  // Complete referral and distribute rewards
+  async completeReferral(referralId: string) {
+    const { data: referral, error } = await supabase
+      .from('referrals')
+      .select('*')
+      .eq('id', referralId)
+      .single();
+
+    if (error) throw error;
+    if (referral.status === 'rewarded') {
+      return referral; // Already rewarded
+    }
+
+    // Add rewards to both users
+    await walletService.addFunds(
+      referral.referrer_reward,
+      'referral_bonus',
+      'Referral bonus - someone used your code',
+      referralId
+    );
+
+    // Give reward to referee
+    const { data: { session } } = await supabase.auth.getSession();
+    const currentUser = session?.user?.id;
+    
+    // Temporarily switch context or use service key
+    // For referee reward, we'll create a separate transaction
+    
+    await supabase
+      .from('referrals')
+      .update({ 
+        status: 'rewarded',
+        rewarded_at: new Date().toISOString()
+      })
+      .eq('id', referralId);
+
+    return referral;
+  },
+
+  // Get user's referrals
+  async getMyReferrals() {
+    const user = await authService.getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+      .from('referrals')
+      .select('*, profiles!referee_id(full_name)')
+      .eq('referrer_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  },
+};
+
+// ==================== CARD OFFERS SERVICES ====================
+
+export const cardOffersService = {
+  // Get active card offers
+  async getActiveOffers() {
+    const { data, error } = await supabase
+      .from('card_offers')
+      .select('*')
+      .eq('is_active', true)
+      .gte('valid_until', new Date().toISOString())
+      .order('discount_value', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Get all offers (admin)
+  async getAllOffers() {
+    const { data, error } = await supabase
+      .from('card_offers')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Create offer (admin)
+  async createOffer(offer: any) {
+    const { data, error} = await supabase
+      .from('card_offers')
+      .insert(offer)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Update offer (admin)
+  async updateOffer(id: string, updates: any) {
+    const { data, error } = await supabase
+      .from('card_offers')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Delete offer (admin)
+  async deleteOffer(id: string) {
+    const { error } = await supabase
+      .from('card_offers')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
+  // Calculate discount for a card
+  calculateDiscount(offer: any, amount: number) {
+    if (amount < offer.min_transaction_amount) {
+      return 0;
+    }
+
+    let discount = 0;
+    if (offer.discount_type === 'percentage') {
+      discount = (amount * offer.discount_value) / 100;
+    } else {
+      discount = offer.discount_value;
+    }
+
+    if (offer.max_discount && discount > offer.max_discount) {
+      discount = offer.max_discount;
+    }
+
+    return discount;
+  },
+};
+
+// ==================== ANALYTICS SERVICES ====================
+
+export const analyticsService = {
+  // Update user session
+  async updateSession(isOnline: boolean = true) {
+    const user = await authService.getCurrentUser();
+    if (!user) return;
+
+    const { data: existing } = await supabase
+      .from('user_sessions')
+      .select('*')
+      .eq('user_id', user.id)
+      .is('session_end', null)
+      .single();
+
+    if (existing && isOnline) {
+      // Update last activity
+      await supabase
+        .from('user_sessions')
+        .update({ last_activity: new Date().toISOString() })
+        .eq('id', existing.id);
+    } else if (existing && !isOnline) {
+      // End session
+      await supabase
+        .from('user_sessions')
+        .update({ 
+          is_online: false,
+          session_end: new Date().toISOString()
+        })
+        .eq('id', existing.id);
+    } else if (!existing && isOnline) {
+      // Create new session
+      await supabase
+        .from('user_sessions')
+        .insert({
+          user_id: user.id,
+          is_online: true,
+          device_info: { userAgent: navigator.userAgent }
+        });
+    }
+  },
+
+  // Get online users count
+  async getOnlineUsersCount() {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    
+    const { count, error } = await supabase
+      .from('user_sessions')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_online', true)
+      .gte('last_activity', fiveMinutesAgo);
+
+    if (error) throw error;
+    return count || 0;
+  },
+
+  // Log activity
+  async logActivity(action: string, details?: any) {
+    const user = await authService.getCurrentUser();
+    
+    await supabase
+      .from('activity_logs')
+      .insert({
+        user_id: user?.id,
+        action,
+        details,
+        user_agent: navigator.userAgent,
+      });
+  },
+
+  // Get activity logs (admin)
+  async getActivityLogs(limit = 100) {
+    const { data, error } = await supabase
+      .from('activity_logs')
+      .select('*, profiles(full_name)')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Get user's activity history
+  async getMyActivity(limit = 50) {
+    const user = await authService.getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+      .from('activity_logs')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return data;
+  },
+};
+
+// ==================== APP SETTINGS SERVICES ====================
+
+export const appSettingsService = {
+  // Get setting
+  async getSetting(key: string) {
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('*')
+      .eq('key', key)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data?.value || null;
+  },
+
+  // Update setting (admin)
+  async updateSetting(key: string, value: string, description?: string) {
+    const user = await authService.getCurrentUser();
+    
+    const { data, error } = await supabase
+      .from('app_settings')
+      .upsert({
+        key,
+        value,
+        description,
+        updated_by: user?.id,
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Get tagline
+  async getTagline() {
+    return await this.getSetting('app_tagline');
+  },
+};
+
+// ==================== PRODUCT ENHANCEMENTS ====================
+
+export const productEnhancementService = {
+  // Increment share count
+  async incrementShareCount(productId: string) {
+    const { data, error } = await supabase.rpc('increment_share_count', {
+      product_id: productId
+    });
+
+    if (error) {
+      // Fallback if function doesn't exist
+      const { data: product } = await supabase
+        .from('products')
+        .select('share_count')
+        .eq('id', productId)
+        .single();
+
+      await supabase
+        .from('products')
+        .update({ share_count: (product?.share_count || 0) + 1 })
+        .eq('id', productId);
+    }
+
+    await analyticsService.logActivity('share_product', { product_id: productId });
+  },
+
+  // Update product colors (admin)
+  async updateColors(productId: string, colors: any[]) {
+    const { error } = await supabase
+      .from('products')
+      .update({ colors })
+      .eq('id', productId);
+
+    if (error) throw error;
+  },
+
+  // Update rotation images (admin)
+  async updateRotationImages(productId: string, images: string[]) {
+    const { error } = await supabase
+      .from('products')
+      .update({ rotation_images: images })
+      .eq('id', productId);
+
+    if (error) throw error;
+  },
+};
+

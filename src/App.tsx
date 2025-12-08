@@ -4,6 +4,7 @@ import { ProductCatalog } from './components/ProductCatalog';
 import { ProductDetail } from './components/ProductDetail';
 import { Cart } from './components/Cart';
 import { Wishlist } from './components/Wishlist';
+import { Wallet } from './components/Wallet';
 import { Checkout } from './components/Checkout';
 import { PurchaseSuccess } from './components/PurchaseSuccess';
 import { OrderTracking } from './components/OrderTracking';
@@ -17,6 +18,7 @@ import { Product, User, Order, CartItem } from './types';
 import { mockProducts } from './data/mockProducts';
 import { productService, cartService, wishlistService, authService, orderService, addressService } from './lib/supabaseService';
 import { couponService, inventoryService, returnService } from './lib/supabaseEnhanced';
+import { useLocationTracking } from './lib/useLocationTracking';
 import { adaptDbProducts } from './lib/productAdapter';
 import { adaptDbOrders } from './lib/orderAdapter';
 import { supabase } from './lib/supabase';
@@ -82,6 +84,9 @@ export default function App() {
       window.removeEventListener('popstate', handlePopState);
     };
   }, []);
+
+  // Location tracking for logged-in users
+  useLocationTracking(currentUser?.id || null);
 
   // Update URL when page changes
   useEffect(() => {
@@ -405,48 +410,48 @@ export default function App() {
     };
   }
 
-  const addToCart = async (product: Product, quantity: number = 1) => {
+  const addToCart = async (product: Product, quantity: number = 1, selectedColor?: string) => {
     if (currentUser) {
       try {
-        const row = await cartService.addToCart(product.id, quantity);
+        const row = await cartService.addToCart(product.id, quantity, selectedColor);
         const adaptedProduct = adaptServerProduct(row);
         setCart((prev: CartItem[]) => {
-          const existing = prev.find((i: CartItem) => i.product.id === product.id);
+          const existing = prev.find((i: CartItem) => i.product.id === product.id && i.selectedColor === selectedColor);
           if (existing) {
             return prev.map((i: CartItem) =>
-              i.product.id === product.id
+              i.product.id === product.id && i.selectedColor === selectedColor
                 ? { ...i, quantity: i.quantity + quantity, itemId: row.id }
                 : i
             );
           }
-          return [...prev, { product: adaptedProduct, quantity: row.quantity, itemId: row.id }];
+          return [...prev, { product: adaptedProduct, quantity: row.quantity, itemId: row.id, selectedColor }];
         });
       } catch (e) {
         console.error('Failed to add to server cart, falling back to local:', e);
         setCart((prev: CartItem[]) => {
-          const existingItem = prev.find((item: CartItem) => item.product.id === product.id);
+          const existingItem = prev.find((item: CartItem) => item.product.id === product.id && item.selectedColor === selectedColor);
           if (existingItem) {
             return prev.map((item: CartItem) =>
-              item.product.id === product.id
+              item.product.id === product.id && item.selectedColor === selectedColor
                 ? { ...item, quantity: item.quantity + quantity }
                 : item
             );
           }
-          return [...prev, { product, quantity }];
+          return [...prev, { product, quantity, selectedColor }];
         });
       }
     } else {
       // Guest local cart
       setCart((prev: CartItem[]) => {
-        const existingItem = prev.find((item: CartItem) => item.product.id === product.id);
+        const existingItem = prev.find((item: CartItem) => item.product.id === product.id && item.selectedColor === selectedColor);
         if (existingItem) {
           return prev.map((item: CartItem) =>
-            item.product.id === product.id
+            item.product.id === product.id && item.selectedColor === selectedColor
               ? { ...item, quantity: item.quantity + quantity }
               : item
           );
         }
-        return [...prev, { product, quantity }];
+        return [...prev, { product, quantity, selectedColor }];
       });
     }
   };
@@ -737,9 +742,9 @@ export default function App() {
           <ProductDetail
             product={selectedProduct}
             onAddToCart={addToCart}
-            onBuyNow={(product, quantity) => {
+            onBuyNow={(product, quantity, selectedColor) => {
               // Set buy now items as a separate cart
-              setBuyNowItems([{ product, quantity, itemId: `buy-now-${product.id}` }]);
+              setBuyNowItems([{ product, quantity, itemId: `buy-now-${product.id}`, selectedColor }]);
               if (currentUser) {
                 navigateToPage('checkout');
               } else {
@@ -750,6 +755,7 @@ export default function App() {
             onBack={() => navigateToPage('catalog')}
             isWishlisted={wishlist.includes(selectedProduct.id)}
             onToggleWishlist={toggleWishlist}
+            currentUser={currentUser}
           />
         ) : null;
       case 'wishlist':
@@ -836,6 +842,14 @@ export default function App() {
             }}
           />
         );
+      case 'wallet':
+        if (!currentUser) {
+          setAuthMode('login');
+          setShowAuthModal(true);
+          navigateToPage('home');
+          return null;
+        }
+        return <Wallet onBack={() => navigateToPage('home')} />;
       case 'admin':
         // Show loading state while checking auth
         if (authLoading) {

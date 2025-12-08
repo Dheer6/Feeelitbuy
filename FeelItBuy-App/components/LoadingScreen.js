@@ -1,18 +1,17 @@
 import React from 'react';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, ActivityIndicator, Text, StyleSheet, SafeAreaView } from 'react-native';
 
 export default function LoadingScreen({ progress = 0 }) {
   const progressPercent = Math.round(progress * 100);
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.container}>
       <ActivityIndicator size="large" color="#007AFF" />
       <Text style={styles.loadingText}>Loading FeelItBuy...</Text>
       {progressPercent > 0 && progressPercent < 100 && (
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
+            <View style={[styles.progressFill, { width: progressPercent + '%' }]} />
           </View>
           <Text style={styles.progressText}>{progressPercent}%</Text>
         </View>

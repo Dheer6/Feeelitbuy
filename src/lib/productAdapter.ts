@@ -10,13 +10,14 @@ interface DbProductRow {
   stock?: number;
   low_stock_threshold?: number;
   rating?: number;
-  low_stock_threshold?: number;
-  rating?: number;
   reviews_count?: number;
   is_featured?: boolean;
   category_id?: string;
   category?: string;
   brand?: string;
+  colors?: Array<{ name: string; hex: string; stock: number; images?: string[]; price?: number }>;
+  rotation_images?: string[];
+  share_count?: number;
   // categories relationship when selected: categories?: { id: string; name: string };
   categories?: { id: string; name: string } | null;
   product_images?: {
@@ -88,6 +89,9 @@ export async function adaptDbProduct(db: DbProductRow): Promise<Product> {
     reviewCount: db.reviews_count || 0,
     featured: !!db.is_featured,
     reviews: [],
+    colors: db.colors || undefined,
+    rotation_images: db.rotation_images || undefined,
+    share_count: db.share_count || 0,
   };
   return product;
 }
@@ -119,6 +123,9 @@ export async function adaptDbProducts(rows: DbProductRow[]): Promise<Product[]> 
         reviewCount: row.reviews_count || 0,
         featured: !!row.is_featured,
         reviews: [],
+        colors: row.colors || undefined,
+        rotation_images: row.rotation_images || undefined,
+        share_count: row.share_count || 0,
       });
     }
   }

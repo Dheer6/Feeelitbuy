@@ -44,19 +44,25 @@ export function Cart({ items, onUpdateQuantity, onRemove, onCheckout, onContinue
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Cart Items */}
         <div className="lg:col-span-2 space-y-4">
-          {items.map((item) => (
-            <Card key={item.product.id} className="p-4">
-              <div className="flex gap-4">
-                <div
-                  className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => onViewProduct(item.product)}
-                >
-                  <ImageWithFallback
-                    src={item.product.images?.[0] || ''}
-                    alt={item.product.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+          {items.map((item) => {
+            // Get color-specific image if color is selected
+            const displayImage = item.selectedColor && item.product.colors
+              ? (item.product.colors.find(c => c.name === item.selectedColor)?.images?.[0] || item.product.images?.[0] || '')
+              : (item.product.images?.[0] || '');
+
+            return (
+              <Card key={item.product.id} className="p-4">
+                <div className="flex gap-4">
+                  <div
+                    className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => onViewProduct(item.product)}
+                  >
+                    <ImageWithFallback
+                      src={displayImage}
+                      alt={item.product.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 <div className="flex-1">
                   <div className="flex justify-between">
                     <div>
@@ -64,6 +70,11 @@ export function Cart({ items, onUpdateQuantity, onRemove, onCheckout, onContinue
                         {item.product.name}
                       </h3>
                       <p className="text-indigo-600 text-sm mb-2">{item.product.brand}</p>
+                      {item.selectedColor && (
+                        <p className="text-sm text-gray-700 mb-1">
+                          Color: <span className="font-semibold">{item.selectedColor}</span>
+                        </p>
+                      )}
                       <p className="text-gray-600 mb-2">
                         {formatINR(item.product.price)} each
                       </p>
@@ -125,7 +136,8 @@ export function Cart({ items, onUpdateQuantity, onRemove, onCheckout, onContinue
                 </div>
               </div>
             </Card>
-          ))}
+            );
+          })}
         </div>
 
         {/* Order Summary */}

@@ -43,7 +43,9 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
 
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const shipping = subtotal > 500 ? 0 : 25;
-  const tax = subtotal * 0.08;
+  const taxRate = 0.18; // 18% GST
+  const tax = subtotal * taxRate;
+  
   // Coupon state
   const [couponCode, setCouponCode] = useState<string>('');
   const [couponError, setCouponError] = useState<string | null>(null);
@@ -51,8 +53,30 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
   const [discountAmount, setDiscountAmount] = useState<number>(0);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
 
-  // Compute total after discount
-  const total = Math.max(0, subtotal + shipping + tax - discountAmount);
+  // Card offers state
+  const [cardOffers, setCardOffers] = useState<any[]>([]);
+  const [selectedCardOffer, setSelectedCardOffer] = useState<any | null>(null);
+  const [cardOfferDiscount, setCardOfferDiscount] = useState<number>(0);
+  const [loadingCardOffers, setLoadingCardOffers] = useState(true);
+
+  // Load card offers
+  useEffect(() => {
+    const fetchCardOffers = async () => {
+      try {
+        const { cardOffersService } = await import('../lib/supabaseService');
+        const offers = await cardOffersService.getActiveOffers();
+        setCardOffers(offers || []);
+      } catch (err) {
+        console.error('Failed to load card offers:', err);
+      } finally {
+        setLoadingCardOffers(false);
+      }
+    };
+    fetchCardOffers();
+  }, []);
+
+  // Compute total after discounts
+  const total = Math.max(0, subtotal + shipping + tax - discountAmount - cardOfferDiscount);
   
   // Check if COD is available (only for orders below 5000)
   const isCODAvailable = total < 5000;
@@ -334,25 +358,112 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
 
               {/* Items */}
               <div className="space-y-3 mb-6 max-h-64 overflow-y-auto">
-                {items.map((item) => (
-                  <div key={item.product.id} className="flex gap-3">
-                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-                      <ImageWithFallback
-                        src={item.product.images?.[0] || ''}
-                        alt={item.product.name}
-                        className="w-full h-full object-cover"
-                      />
+                {items.map((item) => {
+                  // Get color-specific image if color is selected
+                  const displayImage = item.selectedColor && item.product.colors
+                    ? (item.product.colors.find(c => c.name === item.selectedColor)?.images?.[0] || item.product.images?.[0] || '')
+                    : (item.product.images?.[0] || '');
+
+                  return (
+                    <div key={item.product.id} className="flex gap-3">
+                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                        <ImageWithFallback
+                          src={displayImage}
+                          alt={item.product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm truncate">{item.product.name}</p>
+                        {item.selectedColor && (
+                          <p className="text-xs text-gray-500">Color: {item.selectedColor}</p>
+                        )}
+                        <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                        <p className="text-sm text-indigo-600">
+                          {formatINR(item.product.price * item.quantity)}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm truncate">{item.product.name}</p>
-                      <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
-                      <p className="text-sm text-indigo-600">
-                        {formatINR(item.product.price * item.quantity)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+
+              {/* Card Offers */}
+              {!loadingCardOffers && cardOffers.length > 0 && (
+                <div className="mb-6">
+                  <Label className="mb-2 block">Card Offers</Label>
+                  {selectedCardOffer ? (
+                    <div className="flex items-center justify-between border rounded-lg p-3 bg-blue-50">
+                      <div>
+                        <p className="text-sm font-semibold text-blue-700">
+                          {selectedCardOffer.card_type} Card Applied
+                        </p>
+                        <p className="text-xs text-blue-600">
+                          You saved {formatINR(cardOfferDiscount)}
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedCardOffer(null);
+                          setCardOfferDiscount(0);
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {cardOffers.map((offer) => {
+                        const isEligible = subtotal >= offer.min_amount;
+                        const { cardOffersService } = require('../lib/supabaseService');
+                        const discount = cardOffersService.calculateDiscount(offer, subtotal);
+                        
+                        return (
+                          <button
+                            key={offer.id}
+                            onClick={() => {
+                              if (isEligible) {
+                                setSelectedCardOffer(offer);
+                                setCardOfferDiscount(discount);
+                              }
+                            }}
+                            disabled={!isEligible}
+                            className={`w-full text-left p-3 border rounded-lg transition-colors ${
+                              isEligible
+                                ? 'hover:bg-blue-50 hover:border-blue-400 cursor-pointer'
+                                : 'opacity-50 cursor-not-allowed'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-semibold text-sm">{offer.card_type} Card Offer</p>
+                                <p className="text-xs text-gray-600">
+                                  {offer.discount_type === 'percentage'
+                                    ? `${offer.discount_value}% off`
+                                    : `Flat ${formatINR(offer.discount_value)} off`}
+                                  {' on orders above '}{formatINR(offer.min_amount)}
+                                </p>
+                                {!isEligible && (
+                                  <p className="text-xs text-red-600 mt-1">
+                                    Add {formatINR(offer.min_amount - subtotal)} more to avail
+                                  </p>
+                                )}
+                              </div>
+                              {isEligible && (
+                                <span className="text-green-600 font-semibold">
+                                  Save {formatINR(discount)}
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Coupon Code */}
               <div className="mb-6">
@@ -437,18 +548,27 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
                   <span>{shipping === 0 ? 'FREE' : formatINR(shipping)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
-                  <span>Tax</span>
+                  <span>Tax (GST 18%)</span>
                   <span>{formatINR(tax)}</span>
                 </div>
+                {cardOfferDiscount > 0 && (
+                  <div className="flex justify-between text-blue-600">
+                    <span>Card Offer ({selectedCardOffer?.card_type})</span>
+                    <span>-{formatINR(cardOfferDiscount)}</span>
+                  </div>
+                )}
                 {discountAmount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Discount ({appliedCoupon?.code})</span>
                     <span>-{formatINR(discountAmount)}</span>
                   </div>
                 )}
-                <div className="border-t pt-3 flex justify-between">
+                <div className="border-t pt-3 flex justify-between font-semibold text-lg">
                   <span>Total</span>
                   <span className="text-indigo-600">{formatINR(total)}</span>
+                </div>
+                <div className="text-xs text-gray-500 text-right">
+                  Inclusive of all taxes
                 </div>
               </div>
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Edit, Trash2, Plus, Search, Loader2 } from 'lucide-react';
+import { Edit, Trash2, Plus, Search, Loader2, X, Upload, RotateCw } from 'lucide-react';
 import { Product } from '../../types';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
@@ -51,8 +51,14 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
     image_urls: [''],
     discountType: 'none' as 'none' | 'percentage' | 'amount',
     discountValue: 0,
+    colors: [] as Array<{ name: string; hex: string; stock: number; images?: string[]; price?: number }>,
+    rotation_images: [] as string[],
   });
   const [saving, setSaving] = useState(false);
+  const [uploadingRotation, setUploadingRotation] = useState(false);
+  const [newColor, setNewColor] = useState({ name: '', hex: '#000000', stock: 0, images: [] as string[], price: undefined as number | undefined });
+  const [uploadingColorImages, setUploadingColorImages] = useState(false);
+  const [editingColorIndex, setEditingColorIndex] = useState<number | null>(null);
 
   useEffect(() => {
     loadCategories();
@@ -79,7 +85,11 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
       image_urls: [''],
       discountType: 'none',
       discountValue: 0,
+      colors: [],
+      rotation_images: [],
     });
+    setNewColor({ name: '', hex: '#000000', stock: 0, images: [], price: undefined });
+    setEditingColorIndex(null);
     setShowDialog(true);
   };
 
@@ -108,8 +118,146 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
       image_urls: product.images.length > 0 ? product.images : [''],
       discountType,
       discountValue,
+      colors: product.colors || [],
+      rotation_images: product.rotation_images || [],
     });
+    setNewColor({ name: '', hex: '#000000', stock: 0, images: [], price: undefined });
     setShowDialog(true);
+  };
+
+  const handleAddColor = () => {
+    if (!newColor.name || !newColor.hex) {
+      alert('Please provide color name and hex value');
+      return;
+    }
+
+    if (editingColorIndex !== null) {
+      // Update existing color
+      setFormData(prev => ({
+        ...prev,
+        colors: prev.colors.map((color, idx) => 
+          idx === editingColorIndex ? { ...newColor } : color
+        ),
+      }));
+      setEditingColorIndex(null);
+      setNewColor({ name: '', hex: '#000000', stock: 0, images: [], price: undefined });
+    } else {
+      // Add new color and keep it in edit mode for image upload
+      setFormData(prev => ({
+        ...prev,
+        colors: [...prev.colors, { ...newColor }],
+      }));
+      // Set the newly added color as editing to allow image upload
+      setEditingColorIndex(formData.colors.length);
+    }
+  };
+
+  const handleEditColor = (index: number) => {
+    const color = formData.colors[index];
+    setNewColor({ ...color, images: color.images || [], price: color.price });
+    setEditingColorIndex(index);
+  };
+
+  const handleRemoveColor = (index: number) => {
+    setFormData({
+      ...formData,
+      colors: formData.colors.filter((_, i) => i !== index),
+    });
+    if (editingColorIndex === index) {
+      setNewColor({ name: '', hex: '#000000', stock: 0, images: [], price: undefined });
+      setEditingColorIndex(null);
+    }
+  };
+
+  const handleColorImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || editingColorIndex === null) return;
+
+    setUploadingColorImages(true);
+    try {
+      const { supabase } = await import('../../lib/supabase');
+      const uploadedUrls: string[] = [];
+
+      for (const file of Array.from(files)) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        
+        const { data, error } = await supabase.storage
+          .from('product-images')
+          .upload(fileName, file);
+
+        if (error) throw error;
+
+        if (data) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('product-images')
+            .getPublicUrl(data.path);
+          uploadedUrls.push(publicUrl);
+        }
+      }
+
+      // Add images to the color being edited
+      setNewColor(prev => ({
+        ...prev,
+        images: [...(prev.images || []), ...uploadedUrls],
+      }));
+    } catch (err) {
+      alert('Upload failed: ' + (err as Error).message);
+    } finally {
+      setUploadingColorImages(false);
+    }
+  };
+
+  const handleRemoveColorImage = (imageIndex: number) => {
+    setNewColor(prev => ({
+      ...prev,
+      images: (prev.images || []).filter((_, i) => i !== imageIndex),
+    }));
+  };
+
+  const handleRotationImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    setUploadingRotation(true);
+    try {
+      const { supabase } = await import('../../lib/supabase');
+      const uploadedUrls: string[] = [];
+
+      for (const file of Array.from(files)) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        
+        const { data, error } = await supabase.storage
+          .from('360-rotations')
+          .upload(fileName, file);
+
+        if (error) throw error;
+
+        if (data) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('360-rotations')
+            .getPublicUrl(data.path);
+          uploadedUrls.push(publicUrl);
+        }
+      }
+
+      setFormData({
+        ...formData,
+        rotation_images: [...formData.rotation_images, ...uploadedUrls],
+      });
+    } catch (err) {
+      alert('Upload failed: ' + (err as Error).message);
+    } finally {
+      setUploadingRotation(false);
+    }
+  };
+
+  const handleRemoveRotationImage = (index: number) => {
+    setFormData({
+      ...formData,
+      rotation_images: formData.rotation_images.filter((_, i) => i !== index),
+    });
   };
 
   const handleSave = async () => {
@@ -147,6 +295,8 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
           brand: formData.brand,
           discount: discount > 0 ? discount : undefined,
           original_price: discount > 0 ? originalPrice : undefined,
+          colors: formData.colors.length > 0 ? formData.colors : undefined,
+          rotation_images: formData.rotation_images.length > 0 ? formData.rotation_images : undefined,
         } as any);
         productId = editingProduct.id;
 
@@ -167,6 +317,8 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
           is_featured: false,
           discount: discount > 0 ? discount : undefined,
           original_price: discount > 0 ? originalPrice : undefined,
+          colors: formData.colors.length > 0 ? formData.colors : undefined,
+          rotation_images: formData.rotation_images.length > 0 ? formData.rotation_images : undefined,
         } as any);
         productId = newProduct.id;
       }
@@ -372,9 +524,9 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
       {/* Edit Product Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog} modal={true}>
         <DialogContent
-          onEscapeKeyDown={(e) => e.preventDefault()}
-          onPointerDownOutside={(e) => e.preventDefault()}
-          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e: any) => e.preventDefault()}
+          onPointerDownOutside={(e: any) => e.preventDefault()}
+          onInteractOutside={(e: any) => e.preventDefault()}
         >
           <DialogHeader>
             <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
@@ -563,6 +715,266 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
                         )}
                       </div>
                     ))}
+                </div>
+              )}
+            </div>
+
+            {/* Color Variants Section */}
+            <div className="space-y-3 border-t pt-4">
+              <Label className="text-base font-semibold">Color Variants (Optional)</Label>
+              
+              {/* Add/Edit Color Form */}
+              <div className="p-3 border-2 border-dashed rounded-lg bg-gray-50">
+                <div className="space-y-3">
+                  <div className="grid grid-cols-5 gap-3">
+                    <div>
+                      <Label htmlFor="color-name" className="text-xs">Color Name</Label>
+                      <Input
+                        id="color-name"
+                        value={newColor.name}
+                        onChange={(e) => setNewColor({ ...newColor, name: e.target.value })}
+                        placeholder="e.g., Black"
+                        className="mt-1 h-9"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="color-hex" className="text-xs">Hex Code</Label>
+                      <div className="flex gap-1 mt-1">
+                        <input
+                          id="color-hex"
+                          type="color"
+                          value={newColor.hex}
+                          onChange={(e) => setNewColor({ ...newColor, hex: e.target.value })}
+                          className="w-9 h-9 border rounded cursor-pointer"
+                        />
+                        <Input
+                          value={newColor.hex}
+                          onChange={(e) => setNewColor({ ...newColor, hex: e.target.value })}
+                          placeholder="#000000"
+                          className="flex-1 h-9"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="color-stock" className="text-xs">Stock</Label>
+                      <Input
+                        id="color-stock"
+                        type="number"
+                        value={newColor.stock}
+                        onChange={(e) => setNewColor({ ...newColor, stock: Number(e.target.value) })}
+                        placeholder="0"
+                        className="mt-1 h-9"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="color-price" className="text-xs">Price (Optional)</Label>
+                      <Input
+                        id="color-price"
+                        type="number"
+                        value={newColor.price || ''}
+                        onChange={(e) => setNewColor({ ...newColor, price: e.target.value ? Number(e.target.value) : undefined })}
+                        placeholder="Base price"
+                        className="mt-1 h-9"
+                      />
+                    </div>
+
+                    <div className="flex items-end">
+                      <Button
+                        type="button"
+                        onClick={handleAddColor}
+                        disabled={!newColor.name}
+                        className="w-full h-9"
+                        size="sm"
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        {editingColorIndex !== null ? 'Update' : 'Add'}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Color Images Upload - Only show when editing */}
+                  {editingColorIndex !== null && (
+                    <div className="border-t pt-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-semibold">Images for {newColor.name}</Label>
+                        <label htmlFor="color-image-upload">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={uploadingColorImages}
+                            onClick={() => document.getElementById('color-image-upload')?.click()}
+                            asChild
+                          >
+                            <span>
+                              <Upload className="w-3 h-3 mr-1" />
+                              {uploadingColorImages ? 'Uploading...' : 'Upload Images'}
+                            </span>
+                          </Button>
+                        </label>
+                        <input
+                          id="color-image-upload"
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleColorImageUpload}
+                          className="hidden"
+                        />
+                      </div>
+
+                      {/* Color Image Previews */}
+                      {newColor.images && newColor.images.length > 0 && (
+                        <div className="grid grid-cols-4 gap-2">
+                          {newColor.images.map((url, idx) => (
+                            <div key={idx} className="relative group">
+                              <img
+                                src={url}
+                                alt={`${newColor.name} ${idx + 1}`}
+                                className="w-full h-20 object-cover rounded border"
+                              />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                                onClick={() => handleRemoveColorImage(idx)}
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Color List */}
+              {formData.colors.length > 0 && (
+                <div className="space-y-2">
+                  {formData.colors.map((color, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-white border rounded-lg">
+                      <div className="flex items-center gap-2 flex-1">
+                        <div
+                          className="w-6 h-6 rounded border-2 border-gray-300"
+                          style={{ backgroundColor: color.hex }}
+                        />
+                        <div>
+                          <p className="font-semibold text-sm">{color.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {color.hex} • {color.stock} in stock
+                            {color.price && (
+                              <> • {formatINR(color.price)}</>
+                            )}
+                            {color.images && color.images.length > 0 && (
+                              <Badge variant="secondary" className="ml-2 text-xs">
+                                {color.images.length} image{color.images.length > 1 ? 's' : ''}
+                              </Badge>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditColor(idx)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveColor(idx)}
+                          className="text-red-600 hover:bg-red-50"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 360° Rotation Images Section */}
+            <div className="space-y-3 border-t pt-4">
+              <div className="flex items-center gap-2">
+                <RotateCw className="w-5 h-5 text-indigo-600" />
+                <Label className="text-base font-semibold">360° Product Viewer (Optional)</Label>
+              </div>
+              <p className="text-xs text-gray-600">Upload 24+ images for smooth 360° rotation</p>
+              
+              {/* Upload Button */}
+              <div className="border-2 border-dashed rounded-lg p-4 text-center bg-gray-50">
+                <div className="flex flex-col items-center gap-2">
+                  <Upload className="w-8 h-8 text-gray-400" />
+                  <div>
+                    <p className="font-semibold text-sm">Upload Rotation Images</p>
+                    <p className="text-xs text-gray-500">Select multiple images</p>
+                  </div>
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleRotationImageUpload}
+                      disabled={uploadingRotation}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={uploadingRotation}
+                      as="span"
+                    >
+                      {uploadingRotation ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        'Select Images'
+                      )}
+                    </Button>
+                  </label>
+                </div>
+              </div>
+
+              {/* Uploaded Images Grid */}
+              {formData.rotation_images.length > 0 && (
+                <div className="space-y-2">
+                  <p className="font-semibold text-sm">{formData.rotation_images.length} images uploaded</p>
+                  <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto p-2 border rounded-lg">
+                    {formData.rotation_images.map((image, idx) => (
+                      <div key={idx} className="relative group">
+                        <img
+                          src={image}
+                          alt={`360-${idx}`}
+                          className="w-full h-16 object-cover rounded border"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveRotationImage(idx)}
+                          className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition text-red-600 hover:bg-red-50 p-1 h-auto"
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                        <Badge variant="outline" className="absolute bottom-1 left-1 text-xs px-1 py-0">
+                          {idx + 1}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

@@ -626,6 +626,11 @@ export function ProductCatalog({
                       <span className="text-gray-500 text-sm">
                         {product.rating} ({product.reviewCount})
                       </span>
+                      {product.share_count && product.share_count > 0 && (
+                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
+                          📤 {product.share_count} shares
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-baseline gap-2 mb-3">
                       <span className="text-indigo-600">{formatINR(product.price)}</span>

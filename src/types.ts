@@ -17,6 +17,9 @@ export interface Product {
   reviewCount: number;
   reviews?: Review[];
   featured?: boolean;
+  colors?: Array<{ name: string; hex: string; stock: number; images?: string[]; price?: number }>;
+  rotation_images?: string[];
+  share_count?: number;
 }
 
 export interface Review {
@@ -54,6 +57,7 @@ export interface CartItem {
   product: Product;
   quantity: number;
   itemId?: string; // Supabase cart_items row id when synced
+  selectedColor?: string; // Selected color variant
 }
 
 export interface Order {

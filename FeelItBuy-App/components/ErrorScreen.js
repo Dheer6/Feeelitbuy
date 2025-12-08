@@ -5,12 +5,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  SafeAreaView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ErrorScreen({ onRetry }) {
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.emoji}>⚠️</Text>
       <Text style={styles.title}>Connection Error</Text>
       <Text style={styles.message}>

@@ -1,4 +1,4 @@
-import { ShoppingCart, Heart, User, Menu, Home, Package, LayoutDashboard, LogOut } from 'lucide-react';
+import { ShoppingCart, Heart, User, Menu, Home, Package, LayoutDashboard, LogOut, Wallet as WalletIcon } from 'lucide-react';
 import { User as UserType } from '../types';
 import { Button } from './ui/button';
 import {
@@ -136,6 +136,13 @@ export function Header({
                   >
                     <Package className="w-4 h-4 mr-2" />
                     My Orders
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => onNavigate('wallet')}
+                    className="cursor-pointer hover:bg-gray-100"
+                  >
+                    <WalletIcon className="w-4 h-4 mr-2" />
+                    My Wallet
                   </DropdownMenuItem>
                   {currentUser.role === 'admin' && (
                     <>
