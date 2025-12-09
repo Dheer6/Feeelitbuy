@@ -1572,6 +1572,210 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onS
           </div>
         </section>
 
+        {/* Download App Section */}
+        <section className="download-app-section" style={{ padding: 'clamp(3rem, 6vw, 5rem) 0', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+          <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1rem' }}>
+            <div className="download-app-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4rem', alignItems: 'center' }}>
+              {/* Left Content */}
+              <div style={{ color: '#fff' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.25rem', backgroundColor: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(10px)', borderRadius: '2rem', fontSize: '0.875rem', fontWeight: '600', marginBottom: '1.5rem' }}>
+                  <Smartphone style={{ width: '1rem', height: '1rem' }} />
+                  DOWNLOAD OUR APP
+                </div>
+                <h2 style={{ fontSize: 'clamp(2.25rem, 5vw, 3.5rem)', fontWeight: '800', marginBottom: '1.5rem', lineHeight: '1.1' }}>
+                  Experience Shopping<br />
+                  Like Never Before
+                </h2>
+                <p style={{ fontSize: '1.125rem', marginBottom: '2.5rem', lineHeight: '1.7', opacity: 0.95 }}>
+                  Join 50,000+ happy shoppers. Download our app and unlock exclusive deals, seamless checkout, and personalized recommendations. Plus, get ₹100 off on your first order!
+                </p>
+                
+                {/* App Store Buttons */}
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '3rem' }}>
+                  <a 
+                    href="#" 
+                    style={{ 
+                      display: 'inline-flex', 
+                      alignItems: 'center', 
+                      gap: '0.75rem',
+                      backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                      color: '#fff',
+                      padding: '0.875rem 1.75rem',
+                      borderRadius: '1rem',
+                      textDecoration: 'none',
+                      transition: 'all 0.3s',
+                      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-3px)';
+                      e.currentTarget.style.boxShadow = '0 15px 40px rgba(0, 0, 0, 0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.3)';
+                    }}
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                    </svg>
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontSize: '0.625rem', opacity: 0.8 }}>Download on the</div>
+                      <div style={{ fontSize: '1rem', fontWeight: '600' }}>App Store</div>
+                    </div>
+                  </a>
+                  
+                  <a 
+                    href="#" 
+                    style={{ 
+                      display: 'inline-flex', 
+                      alignItems: 'center', 
+                      gap: '0.75rem',
+                      backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                      color: '#fff',
+                      padding: '0.875rem 1.75rem',
+                      borderRadius: '1rem',
+                      textDecoration: 'none',
+                      transition: 'all 0.3s',
+                      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-3px)';
+                      e.currentTarget.style.boxShadow = '0 15px 40px rgba(0, 0, 0, 0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.3)';
+                    }}
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.5,12.92 20.16,13.19L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/>
+                    </svg>
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontSize: '0.625rem', opacity: 0.8 }}>GET IT ON</div>
+                      <div style={{ fontSize: '1rem', fontWeight: '600' }}>Google Play</div>
+                    </div>
+                  </a>
+                </div>
+
+                {/* Stats */}
+                <div className="download-app-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2.5rem', paddingTop: '2.5rem', borderTop: '2px solid rgba(255, 255, 255, 0.2)' }}>
+                  <div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '0.25rem' }}>50K+</div>
+                    <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Downloads</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '0.25rem' }}>4.8⭐</div>
+                    <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Rating</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '0.25rem' }}>24/7</div>
+                    <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Support</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right - Phone Mockup */}
+              <div className="download-app-phone" style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <div style={{ 
+                  position: 'relative', 
+                  width: '300px', 
+                  height: '600px',
+                  backgroundColor: '#1f2937',
+                  borderRadius: '3rem',
+                  padding: '1rem',
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                }}>
+                  {/* Notch */}
+                  <div style={{ 
+                    position: 'absolute',
+                    top: '0',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: '40%',
+                    height: '30px',
+                    backgroundColor: '#1f2937',
+                    borderRadius: '0 0 1rem 1rem',
+                    zIndex: 10
+                  }} />
+                  
+                  {/* Screen */}
+                  <div style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    backgroundColor: '#2d3748',
+                    borderRadius: '2.5rem',
+                    overflow: 'hidden',
+                    position: 'relative'
+                  }}>
+                    {/* App Header */}
+                    <div style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ width: '40px', height: '40px', backgroundColor: '#ef4444', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700' }}>
+                        FIB
+                      </div>
+                      <div>
+                        <div style={{ color: '#fff', fontSize: '0.75rem', fontWeight: '600' }}>Feel It Buy!</div>
+                        <div style={{ color: '#9ca3af', fontSize: '0.625rem' }}>Welcome back!</div>
+                      </div>
+                    </div>
+
+                    {/* Special Offer Card */}
+                    <div style={{ margin: '1rem', padding: '1rem', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '1rem' }}>
+                      <div style={{ color: '#fff', fontSize: '0.625rem', marginBottom: '0.25rem', opacity: 0.9 }}>Special Offer</div>
+                      <div style={{ color: '#fff', fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.25rem' }}>₹100 OFF</div>
+                      <div style={{ color: '#fff', fontSize: '0.75rem', opacity: 0.9 }}>On your first app order</div>
+                    </div>
+
+                    {/* Product Grid Placeholder */}
+                    <div style={{ padding: '0 1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                      {[1, 2, 3, 4].map((i) => (
+                        <div key={i} style={{ 
+                          backgroundColor: '#374151', 
+                          borderRadius: '0.75rem', 
+                          height: '120px',
+                          animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                        }} />
+                      ))}
+                    </div>
+
+                    {/* Bottom Coupon Badge */}
+                    <div style={{ 
+                      position: 'absolute',
+                      bottom: '1rem',
+                      right: '1rem',
+                      background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                      color: '#fff',
+                      padding: '0.75rem 1rem',
+                      borderRadius: '1rem',
+                      fontSize: '1.25rem',
+                      fontWeight: '700',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)'
+                    }}>
+                      ₹100
+                    </div>
+                  </div>
+
+                  {/* Green Check Badge */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '-10px',
+                    right: '-10px',
+                    backgroundColor: '#10b981',
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 10px 15px -3px rgba(16, 185, 129, 0.4)'
+                  }}>
+                    <CheckCircle style={{ width: '32px', height: '32px', color: '#fff' }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Newsletter Section */}
         <section style={{ padding: 'clamp(3rem, 6vw, 5rem) 0', background: 'linear-gradient(to right, #4f46e5, #9333ea)', color: 'white' }}>
           <div style={{ maxWidth: '56rem', margin: '0 auto', padding: '0 1rem', textAlign: 'center' }}>

@@ -293,3 +293,29 @@
 .home-landing-page .opacity-100 {
   opacity: 1 !important;
 }
+
+/* Download App Section Responsive */
+@media (max-width: 768px) {
+  .download-app-section {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .download-app-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .download-app-phone {
+    order: -1;
+    max-width: 300px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .download-app-stats {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+}

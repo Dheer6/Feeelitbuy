@@ -17,6 +17,7 @@ interface ProductDetailProps {
   isWishlisted: boolean;
   onToggleWishlist: (productId: string) => void;
   currentUser: User | null;
+  onViewProduct?: (product: Product) => void;
 }
 
 export function ProductDetail({
@@ -27,6 +28,7 @@ export function ProductDetail({
   isWishlisted,
   onToggleWishlist,
   currentUser,
+  onViewProduct,
 }: ProductDetailProps) {
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -43,6 +45,8 @@ export function ProductDetail({
   const [uploadingImages, setUploadingImages] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
+  const [loadingRecommended, setLoadingRecommended] = useState(true);
 
   // Get images and price to display based on selected color
   const selectedColorData = product.colors?.find(c => c.name === selectedColor);
@@ -99,7 +103,7 @@ export function ProductDetail({
         }
         return;
       }
-      
+
       // TEMPORARY: Allow all logged-in users to write reviews for testing
       // TODO: Re-enable purchase verification in production
       if (mounted) {
@@ -107,7 +111,7 @@ export function ProductDetail({
         setCheckingPurchase(false);
       }
       return;
-      
+
       // Original purchase verification code (commented out for testing)
       /*
       try {
@@ -142,6 +146,33 @@ export function ProductDetail({
     fetchReviews();
     return () => { mounted = false; };
   }, [product.id, reviewSuccess]);
+
+  // Fetch recommended/similar products
+  useEffect(() => {
+    let mounted = true;
+    async function fetchRecommendedProducts() {
+      setLoadingRecommended(true);
+      try {
+        const { productService } = await import('../lib/supabaseService');
+        const allProducts = await productService.getProducts();
+
+        const similar = allProducts
+          .filter(p =>
+            p.id !== product.id &&
+            (p.category === product.category || p.brand === product.brand)
+          )
+          .slice(0, 6);
+
+        if (mounted) setRecommendedProducts(similar);
+      } catch (err) {
+        console.error('Error fetching recommended products:', err);
+        if (mounted) setRecommendedProducts([]);
+      }
+      setLoadingRecommended(false);
+    }
+    fetchRecommendedProducts();
+    return () => { mounted = false; };
+  }, [product.id, product.category, product.brand]);
 
   const handleAddToCart = () => {
     if (product.colors && product.colors.length > 0 && !selectedColor) {
@@ -187,7 +218,7 @@ export function ProductDetail({
 
     // Create preview URLs
     const newPreviewUrls = newFiles.map(file => URL.createObjectURL(file));
-    
+
     setReviewImages(prev => [...prev, ...newFiles]);
     setImagePreviewUrls(prev => [...prev, ...newPreviewUrls]);
   };
@@ -195,7 +226,7 @@ export function ProductDetail({
   const handleRemoveImage = (index: number) => {
     // Revoke the preview URL to free memory
     URL.revokeObjectURL(imagePreviewUrls[index]);
-    
+
     setReviewImages(prev => prev.filter((_, i) => i !== index));
     setImagePreviewUrls(prev => prev.filter((_, i) => i !== index));
   };
@@ -233,7 +264,7 @@ export function ProductDetail({
                 className="w-full aspect-square object-cover"
               />
             </div>
-            
+
             {/* 360° Viewer */}
             {product.rotation_images && product.rotation_images.length > 0 && (
               <Product360Viewer
@@ -256,8 +287,8 @@ export function ProductDetail({
                     <Star
                       key={i}
                       className={`w-5 h-5 ${i < Math.floor(product.rating)
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'fill-gray-300 text-gray-300'
+                        ? 'fill-yellow-400 text-yellow-400'
+                        : 'fill-gray-300 text-gray-300'
                         }`}
                     />
                   ))}
@@ -298,11 +329,10 @@ export function ProductDetail({
                     key={color.name}
                     onClick={() => setSelectedColor(color.name)}
                     disabled={color.stock === 0}
-                    className={`flex items-center gap-2 px-4 py-2 border-2 rounded-lg transition-all ${
-                      selectedColor === color.name
-                        ? 'border-indigo-600 bg-indigo-50'
-                        : 'border-gray-300 hover:border-indigo-400'
-                    } ${color.stock === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`flex items-center gap-2 px-4 py-2 border-2 rounded-lg transition-all ${selectedColor === color.name
+                      ? 'border-indigo-600 bg-indigo-50'
+                      : 'border-gray-300 hover:border-indigo-400'
+                      } ${color.stock === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <div
                       className="w-6 h-6 rounded-full border-2 border-gray-300"
@@ -414,21 +444,21 @@ export function ProductDetail({
                     onClick={() => handleShare('whatsapp')}
                     className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
                   >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
                     WhatsApp
                   </button>
                   <button
                     onClick={() => handleShare('facebook')}
                     className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
                   >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
                     Facebook
                   </button>
                   <button
                     onClick={() => handleShare('twitter')}
                     className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
                   >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" /></svg>
                     Twitter
                   </button>
                   <button
@@ -510,8 +540,8 @@ export function ProductDetail({
                   <Star
                     key={i}
                     className={`w-5 h-5 ${i < Math.floor(product.rating)
-                        ? 'fill-yellow-400 text-yellow-400'
-                        : 'fill-gray-300 text-gray-300'
+                      ? 'fill-yellow-400 text-yellow-400'
+                      : 'fill-gray-300 text-gray-300'
                       }`}
                   />
                 ))}
@@ -567,7 +597,7 @@ export function ProductDetail({
                 setUploadingImages(true);
                 try {
                   const { reviewService } = await import('../lib/supabaseService');
-                  
+
                   // Upload images first (with fallback if storage fails)
                   let imageUrls: string[] = [];
                   if (reviewImages.length > 0) {
@@ -581,10 +611,10 @@ export function ProductDetail({
                       imageUrls = [];
                     }
                   }
-                  
+
                   // Create review with images (or without if upload failed)
                   await reviewService.createReview(product.id, reviewRating, reviewText, imageUrls);
-                  
+
                   // Clean up
                   setReviewText('');
                   setReviewRating(0);
@@ -598,7 +628,7 @@ export function ProductDetail({
                   const error = err as any;
                   const errorMessage = error?.message || 'Failed to submit review. Please try again.';
                   const errorCode = error?.code;
-                  
+
                   if (errorCode === '23505' || errorMessage.includes('duplicate key')) {
                     alert('You have already reviewed this product. Each user can only submit one review per product.');
                   } else if (errorMessage.includes('Bucket not found')) {
@@ -617,7 +647,7 @@ export function ProductDetail({
             >
               <label className="font-semibold mb-2">Your Rating:</label>
               <div className="flex gap-1 mb-2">
-                {[1,2,3,4,5].map((star) => (
+                {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     type="button"
                     key={star}
@@ -625,65 +655,65 @@ export function ProductDetail({
                     className="focus:outline-none"
                     aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
                     disabled={reviewSubmitting}
-                >
-                  <Star className={`w-7 h-7 ${reviewRating >= star ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-300 text-gray-300'}`} />
-                </button>
-              ))}
-            </div>
-            <label htmlFor="review" className="font-semibold">Write a review:</label>
-            <textarea
-              id="review"
-              value={reviewText}
-              onChange={(e) => setReviewText(e.target.value)}
-              className="border rounded-lg p-3 min-h-[80px]"
-              placeholder="Share your experience..."
-              required
-              disabled={reviewSubmitting}
-            />
-            
-            {/* Image Upload Section */}
-            <div className="flex flex-col gap-2">
-              <label className="font-semibold">Add Photos (Optional):</label>
-              <div className="flex flex-wrap gap-3">
-                {/* Image Previews */}
-                {imagePreviewUrls.map((url, index) => (
-                  <div key={index} className="relative w-24 h-24 border rounded-lg overflow-hidden">
-                    <img src={url} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveImage(index)}
-                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                      disabled={reviewSubmitting}
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
+                  >
+                    <Star className={`w-7 h-7 ${reviewRating >= star ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-300 text-gray-300'}`} />
+                  </button>
                 ))}
-                
-                {/* Upload Button */}
-                {reviewImages.length < 5 && (
-                  <label className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 transition-colors">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageSelect}
-                      className="hidden"
-                      disabled={reviewSubmitting}
-                    />
-                    <Upload className="w-6 h-6 text-gray-400" />
-                    <span className="text-xs text-gray-500 mt-1">Add Photo</span>
-                  </label>
-                )}
               </div>
-              <p className="text-xs text-gray-500">You can upload up to 5 images (Max {5 - reviewImages.length} remaining)</p>
-            </div>
-            
-            <Button type="submit" disabled={reviewSubmitting || !reviewText || reviewRating === 0} className="self-start">
-              {uploadingImages ? 'Uploading images...' : reviewSubmitting ? 'Submitting...' : 'Submit Review'}
-            </Button>
-            {reviewSuccess && <span className="text-green-600">Review submitted successfully!</span>}
-          </form>
+              <label htmlFor="review" className="font-semibold">Write a review:</label>
+              <textarea
+                id="review"
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                className="border rounded-lg p-3 min-h-[80px]"
+                placeholder="Share your experience..."
+                required
+                disabled={reviewSubmitting}
+              />
+
+              {/* Image Upload Section */}
+              <div className="flex flex-col gap-2">
+                <label className="font-semibold">Add Photos (Optional):</label>
+                <div className="flex flex-wrap gap-3">
+                  {/* Image Previews */}
+                  {imagePreviewUrls.map((url, index) => (
+                    <div key={index} className="relative w-24 h-24 border rounded-lg overflow-hidden">
+                      <img src={url} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(index)}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        disabled={reviewSubmitting}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* Upload Button */}
+                  {reviewImages.length < 5 && (
+                    <label className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageSelect}
+                        className="hidden"
+                        disabled={reviewSubmitting}
+                      />
+                      <Upload className="w-6 h-6 text-gray-400" />
+                      <span className="text-xs text-gray-500 mt-1">Add Photo</span>
+                    </label>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500">You can upload up to 5 images (Max {5 - reviewImages.length} remaining)</p>
+              </div>
+
+              <Button type="submit" disabled={reviewSubmitting || !reviewText || reviewRating === 0} className="self-start">
+                {uploadingImages ? 'Uploading images...' : reviewSubmitting ? 'Submitting...' : 'Submit Review'}
+              </Button>
+              {reviewSuccess && <span className="text-green-600">Review submitted successfully!</span>}
+            </form>
           )}
 
           {/* Display submitted reviews */}
@@ -700,14 +730,14 @@ export function ProductDetail({
                     <div className="flex items-center gap-3 mb-1">
                       <span className="font-semibold text-gray-900">{r.profiles?.full_name || 'Anonymous'}</span>
                       <span className="flex gap-1">
-                        {[1,2,3,4,5].map((star) => (
+                        {[1, 2, 3, 4, 5].map((star) => (
                           <Star key={star} className={`w-4 h-4 ${r.rating >= star ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-300 text-gray-300'}`} />
                         ))}
                       </span>
                       <span className="text-xs text-gray-500">{new Date(r.created_at).toLocaleDateString()}</span>
                     </div>
                     <div className="text-gray-700 whitespace-pre-line mb-3">{r.comment}</div>
-                    
+
                     {/* Review Images */}
                     {r.images && r.images.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-2">
@@ -729,6 +759,89 @@ export function ProductDetail({
           </div>
         </Card>
       </section>
+
+      {/* Recommended Products Section */}
+      {recommendedProducts.length > 0 && (
+        <section className="mb-12">
+          <h2 className="text-2xl font-bold mb-6">You May Also Like</h2>
+          {loadingRecommended ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recommendedProducts.map((recommendedProduct) => (
+                <Card
+                  key={recommendedProduct.id}
+                  className="overflow-hidden hover:shadow-xl transition-shadow duration-300 cursor-pointer group"
+                  onClick={() => {
+                    if (onViewProduct) {
+                      onViewProduct(recommendedProduct);
+                    } else {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                      window.location.href = `/?product=${recommendedProduct.id}`;
+                    }
+                  }}
+                >
+                  <div className="relative aspect-square overflow-hidden bg-gray-100">
+                    <ImageWithFallback
+                      src={
+                        recommendedProduct.product_images?.[0]?.image_url ||
+                        recommendedProduct.image_url ||
+                        'https://via.placeholder.com/400x400?text=No+Image'
+                      }
+                      alt={recommendedProduct.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                    {recommendedProduct.discount && recommendedProduct.discount > 0 && (
+                      <Badge className="absolute top-2 right-2 bg-red-500 text-white">
+                        {recommendedProduct.discount}% OFF
+                      </Badge>
+                    )}
+                    {recommendedProduct.stock === 0 && (
+                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                        <span className="text-white font-bold text-lg">Out of Stock</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <p className="text-sm text-indigo-600 mb-1">{recommendedProduct.brand}</p>
+                    <h3 className="font-semibold mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
+                      {recommendedProduct.name}
+                    </h3>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-4 h-4 ${i < Math.floor(recommendedProduct.rating)
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'fill-gray-300 text-gray-300'
+                              }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-sm text-gray-600">
+                        {recommendedProduct.rating} ({recommendedProduct.reviewCount})
+                      </span>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xl font-bold text-indigo-600">
+                        {formatINR(recommendedProduct.price)}
+                      </span>
+                      {recommendedProduct.originalPrice && recommendedProduct.originalPrice > recommendedProduct.price && (
+                        <span className="text-sm text-gray-400 line-through">
+                          {formatINR(recommendedProduct.originalPrice)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 }

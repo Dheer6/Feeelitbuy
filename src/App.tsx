@@ -72,7 +72,7 @@ export default function App() {
     };
 
     window.addEventListener('popstate', handlePopState);
-    
+
     // Set initial state
     window.history.replaceState(
       { page: currentPage, category: selectedCategory, searchQuery },
@@ -380,14 +380,14 @@ export default function App() {
     const productImages = Array.isArray(base.product_images) ? base.product_images : [];
     const images = productImages.length
       ? productImages
-          .sort((a: any, b: any) => {
-            // Sort by is_primary first, then by display_order
-            if (a.is_primary && !b.is_primary) return -1;
-            if (!a.is_primary && b.is_primary) return 1;
-            return (a.display_order ?? 0) - (b.display_order ?? 0);
-          })
-          .map((pi: any) => pi.image_url)
-          .filter(Boolean) // Filter out null/undefined URLs
+        .sort((a: any, b: any) => {
+          // Sort by is_primary first, then by display_order
+          if (a.is_primary && !b.is_primary) return -1;
+          if (!a.is_primary && b.is_primary) return 1;
+          return (a.display_order ?? 0) - (b.display_order ?? 0);
+        })
+        .map((pi: any) => pi.image_url)
+        .filter(Boolean) // Filter out null/undefined URLs
       : base.image_url
         ? [base.image_url]
         : [PLACEHOLDER_IMAGE];
@@ -620,11 +620,11 @@ export default function App() {
     try {
       // Update order status to cancelled with the reason
       await orderService.updateOrderStatus(orderId, 'cancelled');
-      
+
       // You could also save the cancellation reason to the database if needed
       // For now, we'll just log it
       console.log('Order cancelled. Reason:', reason);
-      
+
       setOrders((prev: Order[]) =>
         prev.map((order: Order) =>
           order.id === orderId ? { ...order, status: 'cancelled' } : order
@@ -756,6 +756,7 @@ export default function App() {
             isWishlisted={wishlist.includes(selectedProduct.id)}
             onToggleWishlist={toggleWishlist}
             currentUser={currentUser}
+            onViewProduct={handleViewProduct}
           />
         ) : null;
       case 'wishlist':
@@ -860,7 +861,7 @@ export default function App() {
             </div>
           );
         }
-        
+
         if (!currentUser) {
           return (
             <div className="container mx-auto px-4 py-16 text-center">
@@ -874,7 +875,7 @@ export default function App() {
             </div>
           );
         }
-        
+
         if (currentUser.role !== 'admin') {
           return (
             <div className="container mx-auto px-4 py-16 text-center">
@@ -886,7 +887,7 @@ export default function App() {
             </div>
           );
         }
-        
+
         return (
           <AdminDashboard
             products={products}
