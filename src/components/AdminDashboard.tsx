@@ -4,6 +4,7 @@ import {
   Package,
   ShoppingBag,
   Users,
+  User,
   TrendingUp,
   DollarSign,
   Settings,
@@ -14,6 +15,7 @@ import {
   FolderTree,
   CreditCard,
   Gift,
+  Truck,
 } from 'lucide-react';
 import { Product, Order } from '../types';
 import { Card } from './ui/card';
@@ -38,6 +40,8 @@ import { AdminInventory } from './admin/AdminInventory';
 import { AdminCategories } from './admin/AdminCategories';
 import { AdminBankOffers } from './admin/AdminBankOffers';
 import { AdminReferrals } from './admin/AdminReferrals';
+import { AdminDeliveries } from './admin/AdminDeliveries';
+import { AdminDeliveryPartners } from './admin/AdminDeliveryPartners';
 import { formatINR } from '../lib/currency';
 
 interface AdminDashboardProps {
@@ -146,6 +150,14 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
           <TabsTrigger value="referrals">
             <Gift className="w-4 h-4 mr-2" />
             Referrals
+          </TabsTrigger>
+          <TabsTrigger value="deliveries">
+            <Truck className="w-4 h-4 mr-2" />
+            Deliveries
+          </TabsTrigger>
+          <TabsTrigger value="delivery-partners">
+            <User className="w-4 h-4 mr-2" />
+            Partners
           </TabsTrigger>
           <TabsTrigger value="analytics">
             <TrendingUp className="w-4 h-4 mr-2" />
@@ -361,6 +373,16 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
         {/* Referrals Tab */}
         <TabsContent value="referrals">
           <AdminReferrals />
+        </TabsContent>
+
+        {/* Deliveries Tab */}
+        <TabsContent value="deliveries">
+          <AdminDeliveries />
+        </TabsContent>
+
+        {/* Delivery Partners Tab */}
+        <TabsContent value="delivery-partners">
+          <AdminDeliveryPartners />
         </TabsContent>
 
         {/* Analytics Tab */}

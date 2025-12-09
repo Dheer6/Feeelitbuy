@@ -14,6 +14,8 @@ import { AuthModal } from './components/AuthModal';
 import { SignupSuccess } from './components/SignupSuccess';
 import { Header } from './components/Header';
 import { MobileBottomNav } from './components/MobileBottomNav';
+import { DeliveryPartnerSignup } from './components/DeliveryPartnerSignup';
+import { DeliveryDashboard } from './components/DeliveryDashboard';
 import { Product, User, Order, CartItem } from './types';
 import { mockProducts } from './data/mockProducts';
 import { productService, cartService, wishlistService, authService, orderService, addressService } from './lib/supabaseService';
@@ -22,6 +24,7 @@ import { useLocationTracking } from './lib/useLocationTracking';
 import { adaptDbProducts } from './lib/productAdapter';
 import { adaptDbOrders } from './lib/orderAdapter';
 import { supabase } from './lib/supabase';
+import { Button } from './components/ui/button';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<string>('home');
@@ -896,6 +899,23 @@ export default function App() {
             onProductsChange={handleProductsRefresh}
           />
         );
+      case 'delivery-signup':
+        return <DeliveryPartnerSignup />;
+      case 'delivery-dashboard':
+        if (!currentUser) {
+          return (
+            <div className="container mx-auto px-4 py-16 text-center">
+              <p className="text-gray-600 mb-4">Please login to access delivery dashboard</p>
+              <Button onClick={() => {
+                setAuthMode('login');
+                setShowAuthModal(true);
+              }}>
+                Login
+              </Button>
+            </div>
+          );
+        }
+        return <DeliveryDashboard />;
       default:
         return null;
     }

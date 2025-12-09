@@ -6,6 +6,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { formatINR } from '../../lib/currency';
+import { deliveryService } from '../../lib/deliveryService';
 import {
   Dialog,
   DialogContent,
@@ -39,6 +40,34 @@ export function AdminOrders({ orders, onUpdateOrderStatus }: AdminOrdersProps) {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
   const [showViewDialog, setShowViewDialog] = useState(false);
+
+  const handleStatusChange = async (orderId: string, newStatus: Order['status']) => {
+    // Update order status
+    onUpdateOrderStatus(orderId, newStatus);
+
+    // If status is changed to 'shipped', automatically create delivery with QR code
+    if (newStatus === 'shipped') {
+      try {
+        // Check if delivery already exists
+        const { data: existingDelivery } = await deliveryService.supabase
+          .from('deliveries')
+          .select('id')
+          .eq('order_id', orderId)
+          .single();
+
+        if (!existingDelivery) {
+          // Create delivery with QR code
+          const estimatedDeliveryTime = new Date();
+          estimatedDeliveryTime.setDate(estimatedDeliveryTime.getDate() + 3); // 3 days from now
+
+          await deliveryService.createDelivery(orderId, estimatedDeliveryTime);
+          console.log('✅ Delivery created with QR code for order:', orderId);
+        }
+      } catch (error) {
+        console.error('Failed to create delivery:', error);
+      }
+    }
+  };
 
   const filteredOrders = orders.filter((order) => {
     const q = searchQuery.toLowerCase();
@@ -160,7 +189,7 @@ export function AdminOrders({ orders, onUpdateOrderStatus }: AdminOrdersProps) {
                   <Select
                     value={order.status}
                     onValueChange={(value) =>
-                      onUpdateOrderStatus(order.id, value as Order['status'])
+                      handleStatusChange(order.id, value as Order['status'])
                     }
                   >
                     <SelectTrigger className={`w-32 ${getStatusColor(order.status)}`}>

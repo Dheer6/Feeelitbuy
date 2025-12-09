@@ -9,6 +9,7 @@ import { ImageWithFallback } from './figma/ImageWithFallback';
 import { formatINR } from '../lib/currency';
 import { ReturnDialog } from './ReturnDialog';
 import { CancelOrderDialog } from './CancelOrderDialog';
+import { DeliveryTracking } from './DeliveryTracking';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -543,6 +544,11 @@ export function OrderTracking({ orders, selectedOrderId, onSelectOrder, onCancel
                 </div>
               )}
             </Card>
+
+            {/* Live Delivery Tracking */}
+            {['shipped', 'processing'].includes(selectedOrder.status) && (
+              <DeliveryTracking orderId={selectedOrder.id} />
+            )}
 
             {/* Items */}
             <Card className="p-6">
