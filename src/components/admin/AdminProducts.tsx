@@ -524,17 +524,18 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
       {/* Edit Product Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog} modal={true}>
         <DialogContent
+          className="max-w-4xl p-0 gap-0 max-h-[90vh]"
           onEscapeKeyDown={(e: any) => e.preventDefault()}
           onPointerDownOutside={(e: any) => e.preventDefault()}
           onInteractOutside={(e: any) => e.preventDefault()}
         >
-          <DialogHeader>
+          <DialogHeader className="px-6 pt-6 pb-4 border-b">
             <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
             <DialogDescription>
               {editingProduct ? 'Update product details below.' : 'Fill in the details to add a new product.'}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="overflow-y-auto px-6 py-4 space-y-4" style={{ maxHeight: 'calc(90vh - 180px)' }}>
             <div>
               <Label htmlFor="name">Product Name *</Label>
               <Input
@@ -979,7 +980,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
               )}
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="px-6 py-4 border-t bg-gray-50">
             <Button variant="outline" onClick={() => setShowDialog(false)}>
               Cancel
             </Button>

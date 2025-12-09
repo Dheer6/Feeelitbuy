@@ -46,6 +46,7 @@ export type Product = {
 export type Address = {
   id: string;
   user_id: string;
+  label: string; // 'Home', 'Office', 'Other'
   full_name: string;
   phone: string;
   address_line1: string;
@@ -54,6 +55,8 @@ export type Address = {
   state: string;
   postal_code: string;
   country: string;
+  latitude: number | null;
+  longitude: number | null;
   is_default: boolean;
   created_at: string;
 };

@@ -59,7 +59,7 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "bg-white fixed inset-0 m-auto z-[9999] w-full max-w-2xl h-fit max-h-[90vh] overflow-y-auto gap-4 rounded-lg border p-6 shadow-2xl",
+          "bg-white fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-full max-w-2xl max-h-[90vh] gap-4 rounded-lg border p-6 shadow-2xl",
           className,
         )}
         {...props}
@@ -67,7 +67,7 @@ function DialogContent({
         {children}
         <DialogPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4">
           <XIcon />
-          <span className="sr-only">Close</span>
+          <span className="sr-only"></span>
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>
     </DialogPortal>

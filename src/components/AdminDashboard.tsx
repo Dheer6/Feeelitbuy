@@ -11,6 +11,9 @@ import {
   Image,
   RotateCcw,
   Warehouse,
+  FolderTree,
+  CreditCard,
+  Gift,
 } from 'lucide-react';
 import { Product, Order } from '../types';
 import { Card } from './ui/card';
@@ -32,6 +35,9 @@ import { AdminBanners } from './admin/AdminBanners';
 import { AdminCoupons } from './admin/AdminCoupons';
 import { AdminReturns } from './admin/AdminReturns';
 import { AdminInventory } from './admin/AdminInventory';
+import { AdminCategories } from './admin/AdminCategories';
+import { AdminBankOffers } from './admin/AdminBankOffers';
+import { AdminReferrals } from './admin/AdminReferrals';
 import { formatINR } from '../lib/currency';
 
 interface AdminDashboardProps {
@@ -128,6 +134,18 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
           <TabsTrigger value="returns">
             <RotateCcw className="w-4 h-4 mr-2" />
             Returns
+          </TabsTrigger>
+          <TabsTrigger value="categories">
+            <FolderTree className="w-4 h-4 mr-2" />
+            Categories
+          </TabsTrigger>
+          <TabsTrigger value="bankoffers">
+            <CreditCard className="w-4 h-4 mr-2" />
+            Bank Offers
+          </TabsTrigger>
+          <TabsTrigger value="referrals">
+            <Gift className="w-4 h-4 mr-2" />
+            Referrals
           </TabsTrigger>
           <TabsTrigger value="analytics">
             <TrendingUp className="w-4 h-4 mr-2" />
@@ -328,6 +346,21 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
         {/* Returns Tab */}
         <TabsContent value="returns">
           <AdminReturns products={products} onProductsChange={onProductsChange} />
+        </TabsContent>
+
+        {/* Categories Tab */}
+        <TabsContent value="categories">
+          <AdminCategories />
+        </TabsContent>
+
+        {/* Bank Offers Tab */}
+        <TabsContent value="bankoffers">
+          <AdminBankOffers />
+        </TabsContent>
+
+        {/* Referrals Tab */}
+        <TabsContent value="referrals">
+          <AdminReferrals />
         </TabsContent>
 
         {/* Analytics Tab */}

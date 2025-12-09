@@ -1,13 +1,15 @@
-import { User, Mail, Phone, Calendar, Package, Edit2, Save, X } from 'lucide-react';
+import { User, Mail, Phone, Calendar, Package, Edit2, Save, X, MapPin } from 'lucide-react';
 import { User as UserType, Order } from '../types';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { useState } from 'react';
 import { authService } from '../lib/supabaseService';
 import { formatINR } from '../lib/currency';
+import { AddressManager } from './AddressManager';
 
 interface UserProfileProps {
   user: UserType | null;
@@ -225,77 +227,96 @@ export function UserProfile({ user, orders, onViewOrder }: UserProfileProps) {
           </Card>
         </div>
 
-        {/* Recent Orders */}
+        {/* Recent Orders & Addresses */}
         <div className="lg:col-span-2">
-          <Card className="p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2>Recent Orders</h2>
-              {orders.length > 5 && (
-                <Button variant="outline" size="sm" onClick={() => onViewOrder(orders[0].id)}>
-                  View All
-                </Button>
-              )}
-            </div>
+          <Tabs defaultValue="orders" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="orders">
+                <Package className="w-4 h-4 mr-2" />
+                Orders
+              </TabsTrigger>
+              <TabsTrigger value="addresses">
+                <MapPin className="w-4 h-4 mr-2" />
+                Addresses
+              </TabsTrigger>
+            </TabsList>
 
-            {recentOrders.length === 0 ? (
-              <div className="text-center py-12">
-                <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 mb-4">No orders yet</p>
-                <p className="text-gray-500 text-sm">
-                  Your order history will appear here once you make a purchase.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {recentOrders.map((order) => (
-                  <div
-                    key={order.id}
-                    className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <p className="text-sm text-gray-600">Order ID</p>
-                        <p>{order.id}</p>
-                      </div>
-                      <Badge
-                        className={
-                          order.status === 'delivered'
-                            ? 'bg-green-100 text-green-800'
-                            : order.status === 'cancelled'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-blue-100 text-blue-800'
-                        }
-                      >
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                      </Badge>
-                    </div>
-                    <div className="flex justify-between items-center mb-3">
-                      <p className="text-sm text-gray-600">
-                        {new Date(order.createdAt).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </p>
-                      <p className="text-indigo-600">{formatINR(order.total)}</p>
-                    </div>
-                    <div className="flex justify-between items-center pt-3 border-t">
-                      <p className="text-sm text-gray-600">
-                        {order.items.length} item{order.items.length !== 1 ? 's' : ''}
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onViewOrder(order.id)}
-                      >
-                        Track Order
-                      </Button>
-                    </div>
+            <TabsContent value="orders" className="mt-6">
+              <Card className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2>Recent Orders</h2>
+                  {orders.length > 5 && (
+                    <Button variant="outline" size="sm" onClick={() => onViewOrder(orders[0].id)}>
+                      View All
+                    </Button>
+                  )}
+                </div>
+
+                {recentOrders.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 mb-4">No orders yet</p>
+                    <p className="text-gray-500 text-sm">
+                      Your order history will appear here once you make a purchase.
+                    </p>
                   </div>
-                ))}
-              </div>
-            )}
-          </Card>
+                ) : (
+                  <div className="space-y-4">
+                    {recentOrders.map((order) => (
+                      <div
+                        key={order.id}
+                        className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <p className="text-sm text-gray-600">Order ID</p>
+                            <p>{order.id}</p>
+                          </div>
+                          <Badge
+                            className={
+                              order.status === 'delivered'
+                                ? 'bg-green-100 text-green-800'
+                                : order.status === 'cancelled'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-blue-100 text-blue-800'
+                            }
+                          >
+                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center mb-3">
+                          <p className="text-sm text-gray-600">
+                            {new Date(order.createdAt).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                          </p>
+                          <p className="text-indigo-600">{formatINR(order.total)}</p>
+                        </div>
+                        <div className="flex justify-between items-center pt-3 border-t">
+                          <p className="text-sm text-gray-600">
+                            {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+                          </p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onViewOrder(order.id)}
+                          >
+                            Track Order
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="addresses" className="mt-6">
+              <AddressManager />
+            </TabsContent>
+          </Tabs>
 
           {/* Refer and Earn */}
           <Card className="p-6 mt-6 bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200">
