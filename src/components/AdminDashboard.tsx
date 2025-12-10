@@ -42,6 +42,7 @@ import { AdminBankOffers } from './admin/AdminBankOffers';
 import { AdminReferrals } from './admin/AdminReferrals';
 import { AdminDeliveries } from './admin/AdminDeliveries';
 import { AdminDeliveryPartners } from './admin/AdminDeliveryPartners';
+import { AdminAccounts } from './admin/AdminAccounts';
 import { formatINR } from '../lib/currency';
 
 interface AdminDashboardProps {
@@ -180,6 +181,10 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
           <TabsTrigger value="delivery-partners">
             <User className="w-4 h-4 mr-2" />
             Partners
+          </TabsTrigger>
+          <TabsTrigger value="accounts">
+            <DollarSign className="w-4 h-4 mr-2" />
+            Accounts
           </TabsTrigger>
           <TabsTrigger value="analytics">
             <TrendingUp className="w-4 h-4 mr-2" />
@@ -410,6 +415,11 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
         {/* Delivery Partners Tab */}
         <TabsContent value="delivery-partners">
           <AdminDeliveryPartners />
+        </TabsContent>
+
+        {/* Accounts Tab */}
+        <TabsContent value="accounts">
+          <AdminAccounts />
         </TabsContent>
 
         {/* Analytics Tab */}
