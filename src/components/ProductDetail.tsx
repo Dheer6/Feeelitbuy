@@ -47,6 +47,7 @@ export function ProductDetail({
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
   const [loadingRecommended, setLoadingRecommended] = useState(true);
+  const [show360Viewer, setShow360Viewer] = useState(false);
 
   // Get images and price to display based on selected color
   const selectedColorData = product.colors?.find(c => c.name === selectedColor);
@@ -55,6 +56,13 @@ export function ProductDetail({
     : (product.images || []);
   const displayPrice = selectedColorData?.price || product.price;
   const displayStock = selectedColorData?.stock ?? product.stock;
+
+  // Set default color if colors exist
+  useEffect(() => {
+    if (product.colors && product.colors.length > 0 && !selectedColor) {
+      setSelectedColor(product.colors[0].name);
+    }
+  }, [product.id, product.colors]);
 
   // Reset selected image when color changes
   useEffect(() => {
@@ -257,16 +265,27 @@ export function ProductDetail({
             ))}
           </div>
           <div className="flex-1 space-y-4">
-            <div className="rounded-lg overflow-hidden bg-gray-100">
+            <div className="rounded-lg overflow-hidden bg-gray-100 relative">
               <ImageWithFallback
                 src={displayImages[selectedImage] || ''}
                 alt={product.name}
                 className="w-full aspect-square object-cover"
               />
+              {/* 360° Rotation Button */}
+              {product.rotation_images && product.rotation_images.length > 0 && (
+                <Button
+                  onClick={() => setShow360Viewer(!show360Viewer)}
+                  className="absolute bottom-4 right-4 bg-white/90 hover:bg-white shadow-lg"
+                  size="sm"
+                >
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  360° View
+                </Button>
+              )}
             </div>
 
             {/* 360° Viewer */}
-            {product.rotation_images && product.rotation_images.length > 0 && (
+            {show360Viewer && product.rotation_images && product.rotation_images.length > 0 && (
               <Product360Viewer
                 images={product.rotation_images}
                 productName={product.name}

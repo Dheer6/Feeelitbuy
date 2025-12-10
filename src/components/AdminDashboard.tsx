@@ -106,18 +106,19 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-8">
-          <TabsTrigger value="overview">
-            <LayoutDashboard className="w-4 h-4 mr-2" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="products">
-            <Package className="w-4 h-4 mr-2" />
-            Products
-          </TabsTrigger>
-          <TabsTrigger value="inventory">
-            <Warehouse className="w-4 h-4 mr-2" />
-            Inventory
+        <div className="overflow-x-auto mb-8">
+          <TabsList className="inline-flex min-w-full w-max">
+            <TabsTrigger value="overview">
+              <LayoutDashboard className="w-4 h-4 mr-2" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="products">
+              <Package className="w-4 h-4 mr-2" />
+              Products
+            </TabsTrigger>
+            <TabsTrigger value="inventory">
+              <Warehouse className="w-4 h-4 mr-2" />
+              Inventory
           </TabsTrigger>
           <TabsTrigger value="orders">
             <ShoppingBag className="w-4 h-4 mr-2" />
@@ -164,6 +165,7 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
             Analytics
           </TabsTrigger>
         </TabsList>
+      </div>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">

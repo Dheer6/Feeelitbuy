@@ -324,7 +324,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onS
 
          {/* Promotional Banners Section */}
         {!bannersLoading && banners.length > 0 && (
-          <section style={{ position: 'relative', height: 'clamp(400px, 60vh, 600px)', overflow: 'hidden' }} className="hero-carousel">
+          <section style={{ position: 'relative', height: 'clamp(650px, 60vh, 600px)', overflow: 'hidden' }} className="hero-carousel">
             <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0' }}>
                 {banners.map((banner, index) => (
                   <div
@@ -548,7 +548,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onS
         )}
 
         {/* Search Bar - Floating */}
-        <section style={{ position: 'relative', marginTop: 'clamp(-2rem, -4vw, -3rem)', zIndex: 30, marginBottom: 'clamp(2rem, 4vw, 4rem)' }}>
+        {/* <section style={{ position: 'relative', marginTop: 'clamp(-2rem, -4vw, -3rem)', zIndex: 30, marginBottom: 'clamp(2rem, 4vw, 4rem)' }}>
           <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1rem' }}>
             <div style={{ padding: 'clamp(1rem, 2vw, 1.5rem)', boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.15)', backgroundColor: 'white', borderRadius: '1rem', border: 'none' }}>
               <form onSubmit={handleSearch} style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', width: '100%' }}>
@@ -598,7 +598,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onS
               </form>
             </div>
           </div>
-        </section>
+        </section> */}
 
        
 

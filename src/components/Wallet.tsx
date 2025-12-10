@@ -33,12 +33,17 @@ export function Wallet({ onBack }: WalletProps) {
         referralService.generateCode(),
         referralService.getMyReferrals(),
       ]);
+      console.log('Wallet Data:', walletData);
+      console.log('Transactions:', txns);
+      console.log('Referral Code:', refCode);
+      console.log('Referrals:', refs);
       setWallet(walletData);
       setTransactions(txns);
       setReferralCode(refCode);
       setReferrals(refs);
     } catch (err) {
       console.error('Error loading wallet:', err);
+      alert('Error loading wallet data. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -107,32 +112,32 @@ export function Wallet({ onBack }: WalletProps) {
 
       {/* Wallet Balance Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <Card className="p-6 bg-gradient-to-br from-orange-500 to-orange-600 text-white">
+        <div className="p-6 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-md">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm opacity-90">Total Balance</span>
-            <WalletIcon className="w-6 h-6" />
+            <span className="text-sm text-black/90">Total Balance</span>
+            <WalletIcon className="w-6 h-6 text-black" />
           </div>
-          <div className="text-3xl font-bold">{formatINR(wallet?.balance || 0)}</div>
-          <p className="text-xs opacity-75 mt-2">Available for use</p>
-        </Card>
+          <div className="text-3xl font-bold text-black">{formatINR(wallet?.balance || 0)}</div>
+          <p className="text-xs text-black/75 mt-2">Available for use</p>
+        </div>
 
-        <Card className="p-6 bg-gradient-to-br from-green-500 to-green-600 text-white">
+        <div className="p-6 bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-md">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm opacity-90">Referral Earnings</span>
-            <Gift className="w-6 h-6" />
+            <span className="text-sm text-black/90">Referral Earnings</span>
+            <Gift className="w-6 h-6 text-black" />
           </div>
-          <div className="text-3xl font-bold">{formatINR(wallet?.referral_amount || 0)}</div>
-          <p className="text-xs opacity-75 mt-2">From {referrals.length} referrals</p>
-        </Card>
+          <div className="text-3xl font-bold text-black">{formatINR(wallet?.referral_amount || 0)}</div>
+          <p className="text-xs text-black/75 mt-2">From {referrals.length} referrals</p>
+        </div>
 
-        <Card className="p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+        <div className="p-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-md">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm opacity-90">Rewards</span>
-            <TrendingUp className="w-6 h-6" />
+            <span className="text-sm text-black/90">Rewards</span>
+            <TrendingUp className="w-6 h-6 text-black" />
           </div>
-          <div className="text-3xl font-bold">{formatINR(wallet?.reward_amount || 0)}</div>
-          <p className="text-xs opacity-75 mt-2">Cashback & bonuses</p>
-        </Card>
+          <div className="text-3xl font-bold text-black">{formatINR(wallet?.reward_amount || 0)}</div>
+          <p className="text-xs text-black/75 mt-2">Cashback & bonuses</p>
+        </div>
       </div>
 
       <Tabs defaultValue="transactions" className="w-full">
@@ -154,7 +159,7 @@ export function Wallet({ onBack }: WalletProps) {
                       {getTransactionIcon(txn.type)}
                       <div>
                         <p className="font-medium">{txn.description}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs !text-gray-500">
                           {new Date(txn.created_at).toLocaleString()}
                         </p>
                       </div>
@@ -192,7 +197,7 @@ export function Wallet({ onBack }: WalletProps) {
               </div>
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div className="p-4 bg-green-50 rounded-lg">
-                  <p className="text-2xl font-bold text-green-600">₹100</p>
+                  <p className="text-2xl font-bold text-green-600">₹50</p>
                   <p className="text-sm text-gray-600">You earn per referral</p>
                 </div>
                 <div className="p-4 bg-blue-50 rounded-lg">
@@ -238,7 +243,7 @@ export function Wallet({ onBack }: WalletProps) {
                   {referrals.map((ref) => (
                     <div key={ref.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <p className="font-medium">{ref.profiles?.full_name || 'User'}</p>
+                        <p className="font-medium">{ref.referee?.full_name || 'User'}</p>
                         <p className="text-xs text-gray-500">
                           Joined {new Date(ref.created_at).toLocaleDateString()}
                         </p>

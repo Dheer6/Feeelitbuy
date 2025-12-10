@@ -284,6 +284,14 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
       setSaving(true);
       let productId: string;
 
+      // Prepare colors with default selection
+      const colorsWithDefault = formData.colors.length > 0 
+        ? formData.colors.map((color, idx) => ({
+            ...color,
+            isDefault: idx === 0, // First color is default
+          }))
+        : undefined;
+
       if (editingProduct) {
         // Update existing product
         await productService.updateProduct(editingProduct.id, {
@@ -295,7 +303,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
           brand: formData.brand,
           discount: discount > 0 ? discount : undefined,
           original_price: discount > 0 ? originalPrice : undefined,
-          colors: formData.colors.length > 0 ? formData.colors : undefined,
+          colors: colorsWithDefault,
           rotation_images: formData.rotation_images.length > 0 ? formData.rotation_images : undefined,
         } as any);
         productId = editingProduct.id;
@@ -317,7 +325,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
           is_featured: false,
           discount: discount > 0 ? discount : undefined,
           original_price: discount > 0 ? originalPrice : undefined,
-          colors: formData.colors.length > 0 ? formData.colors : undefined,
+          colors: colorsWithDefault,
           rotation_images: formData.rotation_images.length > 0 ? formData.rotation_images : undefined,
         } as any);
         productId = newProduct.id;

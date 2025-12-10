@@ -1206,7 +1206,10 @@ export const referralService = {
 
     const { data, error } = await supabase
       .from('referrals')
-      .select('*, profiles!referee_id(full_name)')
+      .select(`
+        *,
+        referee:profiles!referee_id(full_name)
+      `)
       .eq('referrer_id', user.id)
       .order('created_at', { ascending: false });
 
