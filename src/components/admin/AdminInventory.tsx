@@ -16,21 +16,24 @@ import {
   Plus,
   Minus,
   CheckCircle,
-  XCircle
+  XCircle,
+  Palette
 } from 'lucide-react';
 
 interface AdminInventoryProps {
   products: Product[];
   onUpdateStock: (productId: string, newStock: number, lowStockThreshold?: number) => void;
+  onUpdateColorStock?: (productId: string, colors: Array<{ name: string; hex: string; stock: number; images?: string[]; price?: number; discount?: number }>) => void;
 }
 
-export function AdminInventory({ products, onUpdateStock }: AdminInventoryProps) {
+export function AdminInventory({ products, onUpdateStock, onUpdateColorStock }: AdminInventoryProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingProduct, setEditingProduct] = useState(null as Product | null);
   const [stockAdjustment, setStockAdjustment] = useState(0);
   const [newStockValue, setNewStockValue] = useState(0);
   const [lowStockThreshold, setLowStockThreshold] = useState(10);
   const [filterStatus, setFilterStatus] = useState('all' as 'all' | 'low' | 'out' | 'healthy');
+  const [editingColors, setEditingColors] = useState<Array<{ name: string; hex: string; stock: number; images?: string[]; price?: number; discount?: number }>>([]);
 
   // Calculate inventory metrics
   const totalProducts = products.length;
@@ -79,15 +82,37 @@ export function AdminInventory({ products, onUpdateStock }: AdminInventoryProps)
     setNewStockValue(product.stock);
     setStockAdjustment(0);
     setLowStockThreshold(product.lowStockThreshold || 10);
+    
+    // Initialize color stocks if product has color variants
+    if (product.colors && product.colors.length > 0) {
+      setEditingColors(JSON.parse(JSON.stringify(product.colors)));
+    } else {
+      setEditingColors([]);
+    }
   };
 
   const handleSaveStock = () => {
     if (editingProduct) {
-      const finalStock = Math.max(0, newStockValue + stockAdjustment);
-      onUpdateStock(editingProduct.id, finalStock, lowStockThreshold);
+      // If product has color variants, update color stocks
+      if (editingColors.length > 0 && onUpdateColorStock) {
+        // Calculate total stock from all colors
+        const totalStock = editingColors.reduce((sum, color) => sum + color.stock, 0);
+        onUpdateColorStock(editingProduct.id, editingColors);
+      } else {
+        // Update simple product stock
+        const finalStock = Math.max(0, newStockValue + stockAdjustment);
+        onUpdateStock(editingProduct.id, finalStock, lowStockThreshold);
+      }
       setEditingProduct(null);
       setStockAdjustment(0);
+      setEditingColors([]);
     }
+  };
+
+  const handleColorStockChange = (colorIndex: number, newStock: number) => {
+    const updatedColors = [...editingColors];
+    updatedColors[colorIndex].stock = Math.max(0, newStock);
+    setEditingColors(updatedColors);
   };
 
   const handleQuickAdjust = (product: Product, adjustment: number) => {
@@ -343,95 +368,183 @@ export function AdminInventory({ products, onUpdateStock }: AdminInventoryProps)
                 </div>
               </div>
 
-              <div>
-                <Label>Current Stock</Label>
-                <div className="flex items-center gap-3 mt-2">
-                  <div className="flex-1">
+              {editingColors.length > 0 ? (
+                // Product with color variants
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Palette className="w-4 h-4" />
+                    <span>Color Variant Stocks</span>
+                  </div>
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {editingColors.map((color, index) => (
+                      <div key={index} className="p-4 border rounded-lg bg-white">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div
+                            className="w-8 h-8 rounded border-2 border-gray-300"
+                            style={{ backgroundColor: color.hex }}
+                          />
+                          <div className="flex-1">
+                            <p className="font-medium">{color.name}</p>
+                            {color.price && (
+                              <p className="text-sm text-gray-600">
+                                ₹{color.price.toFixed(2)}
+                                {color.discount && color.discount > 0 && (
+                                  <span className="ml-2 text-green-600">
+                                    {color.discount}% off
+                                  </span>
+                                )}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleColorStockChange(index, color.stock - 10)}
+                          >
+                            -10
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleColorStockChange(index, color.stock - 1)}
+                          >
+                            -1
+                          </Button>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={color.stock}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+                              handleColorStockChange(index, parseInt(e.target.value) || 0)
+                            }
+                            className="text-center font-semibold"
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleColorStockChange(index, color.stock + 1)}
+                          >
+                            +1
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleColorStockChange(index, color.stock + 10)}
+                          >
+                            +10
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold">Total Stock:</span>
+                      <span className="text-2xl font-bold text-blue-600">
+                        {editingColors.reduce((sum, color) => sum + color.stock, 0)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                // Simple product without color variants
+                <>
+                  <div>
+                    <Label>Current Stock</Label>
+                    <div className="flex items-center gap-3 mt-2">
+                      <div className="flex-1">
+                        <Input
+                          type="number"
+                          min="0"
+                          value={newStockValue}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewStockValue(parseInt(e.target.value) || 0)}
+                          className="text-center text-lg font-semibold"
+                        />
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        <TrendingUp className="w-4 h-4 inline mr-1" />
+                        Was: {editingProduct.stock}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label>Quick Adjustment</Label>
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setStockAdjustment(stockAdjustment - 10)}
+                      >
+                        -10
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setStockAdjustment(stockAdjustment - 1)}
+                      >
+                        -1
+                      </Button>
+                      <Input
+                        type="number"
+                        value={stockAdjustment}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStockAdjustment(parseInt(e.target.value) || 0)}
+                        className="text-center flex-1"
+                        placeholder="0"
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => setStockAdjustment(stockAdjustment + 1)}
+                      >
+                        +1
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setStockAdjustment(stockAdjustment + 10)}
+                      >
+                        +10
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label>Low Stock Alert Threshold</Label>
                     <Input
                       type="number"
                       min="0"
-                      value={newStockValue}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewStockValue(parseInt(e.target.value) || 0)}
-                      className="text-center text-lg font-semibold"
+                      value={lowStockThreshold}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLowStockThreshold(parseInt(e.target.value) || 10)}
+                      className="mt-2"
+                      placeholder="10"
                     />
+                    <p className="text-sm text-gray-600 mt-1">
+                      Alert when stock falls below this number
+                    </p>
                   </div>
-                  <div className="text-sm text-gray-600">
-                    <TrendingUp className="w-4 h-4 inline mr-1" />
-                    Was: {editingProduct.stock}
+
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold">Final Stock:</span>
+                      <span className="text-2xl font-bold text-blue-600">
+                        {Math.max(0, newStockValue + stockAdjustment)}
+                      </span>
+                    </div>
+                    {stockAdjustment !== 0 && (
+                      <p className="text-sm text-gray-600">
+                        {stockAdjustment > 0 ? '+' : ''}{stockAdjustment} adjustment
+                      </p>
+                    )}
                   </div>
-                </div>
-              </div>
-
-              <div>
-                <Label>Quick Adjustment</Label>
-                <div className="flex gap-2 mt-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setStockAdjustment(stockAdjustment - 10)}
-                  >
-                    -10
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setStockAdjustment(stockAdjustment - 1)}
-                  >
-                    -1
-                  </Button>
-                  <Input
-                    type="number"
-                    value={stockAdjustment}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStockAdjustment(parseInt(e.target.value) || 0)}
-                    className="text-center flex-1"
-                    placeholder="0"
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={() => setStockAdjustment(stockAdjustment + 1)}
-                  >
-                    +1
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setStockAdjustment(stockAdjustment + 10)}
-                  >
-                    +10
-                  </Button>
-                </div>
-              </div>
-
-              <div>
-                <Label>Low Stock Alert Threshold</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={lowStockThreshold}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLowStockThreshold(parseInt(e.target.value) || 10)}
-                  className="mt-2"
-                  placeholder="10"
-                />
-                <p className="text-sm text-gray-600 mt-1">
-                  Alert when stock falls below this number
-                </p>
-              </div>
-
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold">Final Stock:</span>
-                  <span className="text-2xl font-bold text-blue-600">
-                    {Math.max(0, newStockValue + stockAdjustment)}
-                  </span>
-                </div>
-                {stockAdjustment !== 0 && (
-                  <p className="text-sm text-gray-600">
-                    {stockAdjustment > 0 ? '+' : ''}{stockAdjustment} adjustment
-                  </p>
-                )}
-              </div>
+                </>
+              )}
 
               <div className="flex gap-3">
                 <Button
                   variant="outline"
-                  onClick={() => setEditingProduct(null)}
+                  onClick={() => {
+                    setEditingProduct(null);
+                    setEditingColors([]);
+                  }}
                   className="flex-1"
                 >
                   Cancel

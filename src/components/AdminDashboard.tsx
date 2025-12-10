@@ -72,6 +72,27 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
     }
   };
 
+  // Handle color variant stock updates
+  const handleUpdateColorStock = async (
+    productId: string, 
+    colors: Array<{ name: string; hex: string; stock: number; images?: string[]; price?: number; discount?: number }>
+  ) => {
+    try {
+      const { productService } = await import('../lib/supabaseService');
+      await productService.updateProductColorStocks(productId, colors);
+      
+      // Refresh products to show updated stock
+      if (onProductsChange) {
+        await onProductsChange();
+      }
+      
+      alert('Color variant stocks updated successfully!');
+    } catch (error) {
+      console.error('Error updating color stocks:', error);
+      alert(`Failed to update color stocks: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
   // Calculate stats
   const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
   const totalOrders = orders.length;
@@ -334,7 +355,11 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
 
         {/* Inventory Tab */}
         <TabsContent value="inventory">
-          <AdminInventory products={products} onUpdateStock={handleUpdateStock} />
+          <AdminInventory 
+            products={products} 
+            onUpdateStock={handleUpdateStock}
+            onUpdateColorStock={handleUpdateColorStock}
+          />
         </TabsContent>
 
         {/* Orders Tab */}

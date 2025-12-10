@@ -17,7 +17,7 @@ export interface Product {
   reviewCount: number;
   reviews?: Review[];
   featured?: boolean;
-  colors?: Array<{ name: string; hex: string; stock: number; images?: string[]; price?: number }>;
+  colors?: Array<{ name: string; hex: string; stock: number; images?: string[]; price?: number; discount?: number }>;
   rotation_images?: string[];
   share_count?: number;
 }

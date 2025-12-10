@@ -190,6 +190,28 @@ export const productService = {
     if (error) throw error;
     return data as Product;
   },
+
+  // Update product color variant stocks (admin only)
+  async updateProductColorStocks(
+    id: string, 
+    colors: Array<{ name: string; hex: string; stock: number; images?: string[]; price?: number; discount?: number }>
+  ) {
+    // Calculate total stock from all colors
+    const totalStock = colors.reduce((sum, color) => sum + color.stock, 0);
+
+    const { data, error } = await supabase
+      .from('products')
+      .update({
+        colors: colors,
+        stock: totalStock
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as Product;
+  },
 };
 
 // ==================== CATEGORY SERVICES ====================

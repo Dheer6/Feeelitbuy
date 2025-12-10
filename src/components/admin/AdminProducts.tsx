@@ -51,12 +51,12 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
     image_urls: [''],
     discountType: 'none' as 'none' | 'percentage' | 'amount',
     discountValue: 0,
-    colors: [] as Array<{ name: string; hex: string; stock: number; images?: string[]; price?: number }>,
+    colors: [] as Array<{ name: string; hex: string; stock: number; images?: string[]; price?: number; discount?: number }>,
     rotation_images: [] as string[],
   });
   const [saving, setSaving] = useState(false);
   const [uploadingRotation, setUploadingRotation] = useState(false);
-  const [newColor, setNewColor] = useState({ name: '', hex: '#000000', stock: 0, images: [] as string[], price: undefined as number | undefined });
+  const [newColor, setNewColor] = useState({ name: '', hex: '#000000', stock: 0, images: [] as string[], price: undefined as number | undefined, discount: undefined as number | undefined });
   const [uploadingColorImages, setUploadingColorImages] = useState(false);
   const [editingColorIndex, setEditingColorIndex] = useState<number | null>(null);
 
@@ -88,7 +88,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
       colors: [],
       rotation_images: [],
     });
-    setNewColor({ name: '', hex: '#000000', stock: 0, images: [], price: undefined });
+    setNewColor({ name: '', hex: '#000000', stock: 0, images: [], price: undefined, discount: undefined });
     setEditingColorIndex(null);
     setShowDialog(true);
   };
@@ -121,7 +121,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
       colors: product.colors || [],
       rotation_images: product.rotation_images || [],
     });
-    setNewColor({ name: '', hex: '#000000', stock: 0, images: [], price: undefined });
+    setNewColor({ name: '', hex: '#000000', stock: 0, images: [], price: undefined, discount: undefined });
     setShowDialog(true);
   };
 
@@ -140,7 +140,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
         ),
       }));
       setEditingColorIndex(null);
-      setNewColor({ name: '', hex: '#000000', stock: 0, images: [], price: undefined });
+      setNewColor({ name: '', hex: '#000000', stock: 0, images: [], price: undefined, discount: undefined });
     } else {
       // Add new color and keep it in edit mode for image upload
       setFormData(prev => ({
@@ -154,7 +154,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
 
   const handleEditColor = (index: number) => {
     const color = formData.colors[index];
-    setNewColor({ ...color, images: color.images || [], price: color.price });
+    setNewColor({ ...color, images: color.images || [], price: color.price, discount: color.discount });
     setEditingColorIndex(index);
   };
 
@@ -261,48 +261,43 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
   };
 
   const handleSave = async () => {
-    if (!formData.name || formData.price <= 0) {
-      alert('Please fill in all required fields');
+    if (!formData.name) {
+      alert('Please enter product name');
+      return;
+    }
+    
+    if (formData.colors.length === 0) {
+      alert('Please add at least one color variant with price and stock');
       return;
     }
 
-    // Calculate discount and original price based on discount type
-    let discount = 0;
-    let originalPrice = formData.price;
-
-    if (formData.discountType === 'percentage' && formData.discountValue > 0) {
-      discount = formData.discountValue;
-      // Original price is calculated from current price + discount
-      originalPrice = formData.price / (1 - discount / 100);
-    } else if (formData.discountType === 'amount' && formData.discountValue > 0) {
-      originalPrice = formData.price + formData.discountValue;
-      // Calculate percentage for display
-      discount = (formData.discountValue / originalPrice) * 100;
-    }
+    // Calculate total stock and base price from first color
+    const totalStock = formData.colors.reduce((sum, color) => sum + color.stock, 0);
+    const basePrice = formData.colors[0].price || 0;
+    const baseDiscount = formData.colors[0].discount || 0;
+    const originalPrice = baseDiscount > 0 ? basePrice / (1 - baseDiscount / 100) : basePrice;
 
     try {
       setSaving(true);
       let productId: string;
 
-      // Prepare colors with default selection
-      const colorsWithDefault = formData.colors.length > 0 
-        ? formData.colors.map((color, idx) => ({
-            ...color,
-            isDefault: idx === 0, // First color is default
-          }))
-        : undefined;
+      // Prepare colors with default selection and discount info
+      const colorsWithDefault = formData.colors.map((color, idx) => ({
+        ...color,
+        isDefault: idx === 0, // First color is default
+      }));
 
       if (editingProduct) {
         // Update existing product
         await productService.updateProduct(editingProduct.id, {
           name: formData.name,
           description: formData.description,
-          price: formData.price,
-          stock: formData.stock,
+          price: basePrice,
+          stock: totalStock,
           category_id: formData.category_id,
           brand: formData.brand,
-          discount: discount > 0 ? discount : undefined,
-          original_price: discount > 0 ? originalPrice : undefined,
+          discount: baseDiscount > 0 ? baseDiscount : undefined,
+          original_price: baseDiscount > 0 ? originalPrice : undefined,
           colors: colorsWithDefault,
           rotation_images: formData.rotation_images.length > 0 ? formData.rotation_images : undefined,
         } as any);
@@ -318,13 +313,13 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
         const newProduct = await productService.createProduct({
           name: formData.name,
           description: formData.description,
-          price: formData.price,
-          stock: formData.stock,
+          price: basePrice,
+          stock: totalStock,
           category_id: formData.category_id,
           brand: formData.brand,
           is_featured: false,
-          discount: discount > 0 ? discount : undefined,
-          original_price: discount > 0 ? originalPrice : undefined,
+          discount: baseDiscount > 0 ? baseDiscount : undefined,
+          original_price: baseDiscount > 0 ? originalPrice : undefined,
           colors: colorsWithDefault,
           rotation_images: formData.rotation_images.length > 0 ? formData.rotation_images : undefined,
         } as any);
@@ -563,31 +558,9 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
                 rows={4}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="price">Price (INR) *</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
-                />
-                <p className="text-xs text-gray-500 mt-1">Final price after discount</p>
-              </div>
-              <div>
-                <Label htmlFor="stock">Stock *</Label>
-                <Input
-                  id="stock"
-                  type="number"
-                  value={formData.stock}
-                  onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
-                  placeholder="0"
-                  min="0"
-                />
-              </div>
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-900 font-medium">📝 Price and stock are now managed per color variant</p>
+              <p className="text-xs text-blue-700 mt-1">Add at least one color variant below with price and stock information</p>
             </div>
             <div className="space-y-3">
               <Label>Discount (Optional)</Label>
@@ -730,14 +703,15 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
 
             {/* Color Variants Section */}
             <div className="space-y-3 border-t pt-4">
-              <Label className="text-base font-semibold">Color Variants (Optional)</Label>
+              <Label className="text-base font-semibold">Color Variants (Required) *</Label>
+              <p className="text-xs text-gray-500">Add at least one color variant with price and stock</p>
               
               {/* Add/Edit Color Form */}
               <div className="p-3 border-2 border-dashed rounded-lg bg-gray-50">
                 <div className="space-y-3">
-                  <div className="grid grid-cols-5 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <Label htmlFor="color-name" className="text-xs">Color Name</Label>
+                      <Label htmlFor="color-name" className="text-xs">Color Name *</Label>
                       <Input
                         id="color-name"
                         value={newColor.name}
@@ -748,7 +722,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
                     </div>
 
                     <div>
-                      <Label htmlFor="color-hex" className="text-xs">Hex Code</Label>
+                      <Label htmlFor="color-hex" className="text-xs">Hex Code *</Label>
                       <div className="flex gap-1 mt-1">
                         <input
                           id="color-hex"
@@ -767,7 +741,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
                     </div>
 
                     <div>
-                      <Label htmlFor="color-stock" className="text-xs">Stock</Label>
+                      <Label htmlFor="color-stock" className="text-xs">Stock *</Label>
                       <Input
                         id="color-stock"
                         type="number"
@@ -777,16 +751,33 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
                         className="mt-1 h-9"
                       />
                     </div>
+                  </div>
 
+                  <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <Label htmlFor="color-price" className="text-xs">Price (Optional)</Label>
+                      <Label htmlFor="color-price" className="text-xs">Price (₹) *</Label>
                       <Input
                         id="color-price"
                         type="number"
                         value={newColor.price || ''}
                         onChange={(e) => setNewColor({ ...newColor, price: e.target.value ? Number(e.target.value) : undefined })}
-                        placeholder="Base price"
+                        placeholder="0.00"
                         className="mt-1 h-9"
+                        step="0.01"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="color-discount" className="text-xs">Discount (%)</Label>
+                      <Input
+                        id="color-discount"
+                        type="number"
+                        value={newColor.discount || ''}
+                        onChange={(e) => setNewColor({ ...newColor, discount: e.target.value ? Number(e.target.value) : undefined })}
+                        placeholder="0"
+                        className="mt-1 h-9"
+                        min="0"
+                        max="100"
                       />
                     </div>
 
@@ -794,7 +785,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
                       <Button
                         type="button"
                         onClick={handleAddColor}
-                        disabled={!newColor.name}
+                        disabled={!newColor.name || !newColor.price}
                         className="w-full h-9"
                         size="sm"
                       >
@@ -992,7 +983,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
             <Button variant="outline" onClick={() => setShowDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={saving || !formData.name || formData.price <= 0}>
+            <Button onClick={handleSave} disabled={saving || !formData.name || formData.colors.length === 0}>
               {saving ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
