@@ -16,6 +16,8 @@ import {
   CreditCard,
   Gift,
   Truck,
+  Menu,
+  X,
 } from 'lucide-react';
 import { Product, Order } from '../types';
 import { Card } from './ui/card';
@@ -50,10 +52,13 @@ interface AdminDashboardProps {
   orders: Order[];
   onUpdateOrderStatus: (orderId: string, status: Order['status']) => void;
   onProductsChange?: () => void;
+  onNavigate?: (page: string) => void;
 }
 
-export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProductsChange }: AdminDashboardProps) {
+export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProductsChange, onNavigate }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // Handle stock updates
   const handleUpdateStock = async (productId: string, newStock: number, lowStockThreshold?: number) => {
@@ -111,87 +116,404 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
     .sort((a, b) => b.rating * b.reviewCount - a.rating * a.reviewCount)
     .slice(0, 5);
 
+  // Generate notifications
+  const notifications = [
+    // New orders (pending/processing)
+    ...orders
+      .filter(o => ['pending', 'processing'].includes(o.status))
+      .slice(0, 3)
+      .map(order => ({
+        id: `order-${order.id}`,
+        type: 'order' as const,
+        title: 'New Order',
+        message: `Order #${order.id.slice(0, 8)} - ${formatINR(order.total)}`,
+        time: new Date(order.createdAt).toLocaleString(),
+        icon: ShoppingBag,
+        color: 'blue',
+        action: () => setActiveTab('orders')
+      })),
+    // Low stock alerts
+    ...products
+      .filter(p => {
+        const threshold = p.lowStockThreshold || 10;
+        return p.stock > 0 && p.stock <= threshold;
+      })
+      .slice(0, 3)
+      .map(product => ({
+        id: `stock-${product.id}`,
+        type: 'stock' as const,
+        title: 'Low Stock Alert',
+        message: `${product.name} - Only ${product.stock} left`,
+        time: 'Just now',
+        icon: Package,
+        color: 'orange',
+        action: () => setActiveTab('inventory')
+      })),
+    // Recent deliveries
+    ...orders
+      .filter(o => o.status === 'shipped')
+      .slice(0, 2)
+      .map(order => ({
+        id: `delivery-${order.id}`,
+        type: 'delivery' as const,
+        title: 'Order Shipped',
+        message: `Order #${order.id.slice(0, 8)} is on the way`,
+        time: new Date(order.createdAt).toLocaleString(),
+        icon: Truck,
+        color: 'green',
+        action: () => setActiveTab('deliveries')
+      }))
+  ].slice(0, 8); // Limit to 8 notifications
+
+  const unreadCount = notifications.length;
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1>Admin Dashboard</h1>
-        <div className="flex gap-3">
-          <Button variant="outline" size="sm">
-            <Bell className="w-4 h-4 mr-2" />
-            Notifications
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Left Sidebar - Important Tabs */}
+      <div className={`bg-white border-r border-gray-200 flex flex-col h-screen sticky top-0 transition-all duration-300 ${sidebarCollapsed ? 'w-20' : 'w-48'}`}>
+        {/* Logo and Brand */}
+        <div className={`border-b border-gray-200 ${sidebarCollapsed ? 'p-3' : 'p-6'}`}>
+          <div className="flex items-center justify-between mb-2">
+            {!sidebarCollapsed && (
+              <div className="flex items-center gap-3">
+                <img 
+                  src="/fib-logo.png" 
+                  alt="FIB Logo" 
+                  className="w-auto h-10 object-contain"
+                />
+                {/* <div>
+                  <h1 className="text-xl font-bold text-gray-900">Feel It Buy</h1>
+                  <p className="text-xs text-gray-500">Admin Panel</p>
+                </div> */}
+              </div>
+            )}
+            <button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {sidebarCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+        
+        {/* Navigation */}
+        <nav className={`flex-1 space-y-2 overflow-y-auto ${sidebarCollapsed ? 'p-3' : 'p-6'}`}>
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`w-full flex items-center rounded-lg transition-all ${
+              activeTab === 'overview'
+                ? 'bg-red-500 text-white shadow-md'
+                : 'text-gray-700 hover:bg-gray-100'
+            } ${sidebarCollapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'}`}
+            title="Overview"
+          >
+            <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
+            {!sidebarCollapsed && <span className="font-medium">Overview</span>}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('products')}
+            className={`w-full flex items-center rounded-lg transition-all ${
+              activeTab === 'products'
+                ? 'bg-red-500 text-white shadow-md'
+                : 'text-gray-700 hover:bg-gray-100'
+            } ${sidebarCollapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'}`}
+            title="Products"
+          >
+            <Package className="w-5 h-5 flex-shrink-0" />
+            {!sidebarCollapsed && <span className="font-medium">Products</span>}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('inventory')}
+            className={`w-full flex items-center rounded-lg transition-all ${
+              activeTab === 'inventory'
+                ? 'bg-red-500 text-white shadow-md'
+                : 'text-gray-700 hover:bg-gray-100'
+            } ${sidebarCollapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'}`}
+            title="Inventory"
+          >
+            <Warehouse className="w-5 h-5 flex-shrink-0" />
+            {!sidebarCollapsed && <span className="font-medium">Inventory</span>}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('orders')}
+            className={`w-full flex items-center rounded-lg transition-all ${
+              activeTab === 'orders'
+                ? 'bg-red-500 text-white shadow-md'
+                : 'text-gray-700 hover:bg-gray-100'
+            } ${sidebarCollapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'}`}
+            title="Orders"
+          >
+            <ShoppingBag className="w-5 h-5 flex-shrink-0" />
+            {!sidebarCollapsed && <span className="font-medium">Orders</span>}
+          </button>
+
+          
+
+          <button
+            onClick={() => setActiveTab('accounts')}
+            className={`w-full flex items-center rounded-lg transition-all ${
+              activeTab === 'accounts'
+                ? 'bg-red-500 text-white shadow-md'
+                : 'text-gray-700 hover:bg-gray-100'
+            } ${sidebarCollapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'}`}
+            title="Accounts"
+          >
+            <DollarSign className="w-5 h-5 flex-shrink-0" />
+            {!sidebarCollapsed && <span className="font-medium">Accounts</span>}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`w-full flex items-center rounded-lg transition-all ${
+              activeTab === 'analytics'
+                ? 'bg-red-500 text-white shadow-md'
+                : 'text-gray-700 hover:bg-gray-100'
+            } ${sidebarCollapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'}`}
+            title="Analytics"
+          >
+            <TrendingUp className="w-5 h-5 flex-shrink-0" />
+            {!sidebarCollapsed && <span className="font-medium">Analytics</span>}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('returns')}
+            className={`w-full flex items-center rounded-lg transition-all ${
+              activeTab === 'returns'
+                ? 'bg-red-500 text-white shadow-md'
+                : 'text-gray-700 hover:bg-gray-100'
+            } ${sidebarCollapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'}`}
+            title="Returns"
+          >
+            <RotateCcw className="w-5 h-5 flex-shrink-0" />
+            {!sidebarCollapsed && <span className="font-medium">Returns</span>}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('deliveries')}
+            className={`w-full flex items-center rounded-lg transition-all ${
+              activeTab === 'deliveries'
+                ? 'bg-red-500 text-white shadow-md'
+                : 'text-gray-700 hover:bg-gray-100'
+            } ${sidebarCollapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'}`}
+            title="Deliveries"
+          >
+            <Truck className="w-5 h-5 flex-shrink-0" />
+            {!sidebarCollapsed && <span className="font-medium">Deliveries</span>}
+          </button>
+          <button
+            onClick={() => setActiveTab('users')}
+            className={`w-full flex items-center rounded-lg transition-all ${
+              activeTab === 'users'
+                ? 'bg-red-500 text-white shadow-md'
+                : 'text-gray-700 hover:bg-gray-100'
+            } ${sidebarCollapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'}`}
+            title="Users"
+          >
+            <Users className="w-5 h-5 flex-shrink-0" />
+            {!sidebarCollapsed && <span className="font-medium">Users</span>}
+          </button>
+        </nav>
+
+        {/* Bottom Actions */}
+        <div className={`border-t border-gray-200 space-y-2 ${sidebarCollapsed ? 'p-3' : 'p-6'}`}>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className={`w-full text-gray-700 hover:bg-gray-100 ${sidebarCollapsed ? 'justify-center p-2' : 'justify-start'}`}
+            onClick={() => onNavigate?.('home')}
+            title="Settings"
+          >
+            <Settings className={`w-5 h-5 flex-shrink-0 ${sidebarCollapsed ? '' : 'mr-3'}`} />
+            {!sidebarCollapsed && <span className="font-medium">Settings</span>}
           </Button>
-          <Button variant="outline" size="sm">
-            <Settings className="w-4 h-4 mr-2" />
-            Settings
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className={`w-full border-red-200 text-red-600 hover:bg-red-50 ${sidebarCollapsed ? 'justify-center p-2' : 'justify-start'}`}
+            onClick={() => onNavigate?.('home')}
+            title="Back to Store"
+          >
+            <svg className={`w-5 h-5 flex-shrink-0 ${sidebarCollapsed ? '' : 'mr-3'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            {!sidebarCollapsed && <span className="font-medium">Back to Store</span>}
           </Button>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="overflow-x-auto mb-8">
-          <TabsList className="inline-flex min-w-full w-max">
-            <TabsTrigger value="overview">
-              <LayoutDashboard className="w-4 h-4 mr-2" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="products">
-              <Package className="w-4 h-4 mr-2" />
-              Products
-            </TabsTrigger>
-            <TabsTrigger value="inventory">
-              <Warehouse className="w-4 h-4 mr-2" />
-              Inventory
-          </TabsTrigger>
-          <TabsTrigger value="orders">
-            <ShoppingBag className="w-4 h-4 mr-2" />
-            Orders
-          </TabsTrigger>
-          <TabsTrigger value="users">
-            <Users className="w-4 h-4 mr-2" />
-            Users
-          </TabsTrigger>
-          <TabsTrigger value="banners">
-            <Image className="w-4 h-4 mr-2" />
-            Banners
-          </TabsTrigger>
-          <TabsTrigger value="coupons">
-            <DollarSign className="w-4 h-4 mr-2" />
-            Coupons
-          </TabsTrigger>
-          <TabsTrigger value="returns">
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Returns
-          </TabsTrigger>
-          <TabsTrigger value="categories">
-            <FolderTree className="w-4 h-4 mr-2" />
-            Categories
-          </TabsTrigger>
-          <TabsTrigger value="bankoffers">
-            <CreditCard className="w-4 h-4 mr-2" />
-            Bank Offers
-          </TabsTrigger>
-          <TabsTrigger value="referrals">
-            <Gift className="w-4 h-4 mr-2" />
-            Referrals
-          </TabsTrigger>
-          <TabsTrigger value="deliveries">
-            <Truck className="w-4 h-4 mr-2" />
-            Deliveries
-          </TabsTrigger>
-          <TabsTrigger value="delivery-partners">
-            <User className="w-4 h-4 mr-2" />
-            Partners
-          </TabsTrigger>
-          <TabsTrigger value="accounts">
-            <DollarSign className="w-4 h-4 mr-2" />
-            Accounts
-          </TabsTrigger>
-          <TabsTrigger value="analytics">
-            <TrendingUp className="w-4 h-4 mr-2" />
-            Analytics
-          </TabsTrigger>
-        </TabsList>
-      </div>
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-auto p-6">
+        <div className="container mx-auto px-8 py-6">
+          {/* Top Action Bar */}
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-1">
+                {activeTab === 'overview' && 'Dashboard'}
+                {activeTab === 'products' && 'Products'}
+                {activeTab === 'inventory' && 'Inventory'}
+                {activeTab === 'orders' && 'Orders'}
+                {activeTab === 'users' && 'Customers'}
+                {activeTab === 'accounts' && 'Accounts'}
+                {activeTab === 'analytics' && 'Analytics'}
+                {activeTab === 'returns' && 'Returns'}
+                {activeTab === 'deliveries' && 'Deliveries'}
+                {activeTab === 'banners' && 'Banners'}
+                {activeTab === 'coupons' && 'Coupons'}
+                {activeTab === 'categories' && 'Categories'}
+                {activeTab === 'bankoffers' && 'Bank Offers'}
+                {activeTab === 'referrals' && 'Referrals'}
+                {activeTab === 'delivery-partners' && 'Partners'}
+              </h2>
+              <p className="text-sm text-gray-600">
+                {activeTab === 'overview' && 'Monitor your store performance'}
+                {activeTab === 'products' && 'Manage your product catalog'}
+                {activeTab === 'inventory' && 'Track stock levels and inventory'}
+                {activeTab === 'orders' && 'View and manage customer orders'}
+                {activeTab === 'users' && 'Manage customer accounts'}
+                {activeTab === 'accounts' && 'Financial reports and statements'}
+                {activeTab === 'analytics' && 'View detailed insights and reports'}
+                {activeTab === 'returns' && 'Handle product return requests'}
+                {activeTab === 'deliveries' && 'Manage delivery operations'}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <div className="relative">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative"
+                >
+                  <Bell className="w-4 h-4 mr-2" />
+                  Notifications
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Button>
+
+                {/* Notifications Dropdown */}
+                {showNotifications && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setShowNotifications(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-2xl border border-gray-200 z-50 max-h-[600px] overflow-hidden flex flex-col">
+                      {/* Header */}
+                      <div className="p-4 border-b border-gray-200 bg-gray-50">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold text-gray-900">Notifications</h3>
+                          <Badge className="bg-red-100 text-red-700">
+                            {unreadCount} new
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* Notifications List */}
+                      <div className="overflow-y-auto flex-1">
+                        {notifications.length === 0 ? (
+                          <div className="p-8 text-center text-gray-500">
+                            <Bell className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                            <p>No new notifications</p>
+                          </div>
+                        ) : (
+                          <div className="divide-y divide-gray-100">
+                            {notifications.map((notification) => {
+                              const IconComponent = notification.icon;
+                              return (
+                                <button
+                                  key={notification.id}
+                                  onClick={() => {
+                                    notification.action();
+                                    setShowNotifications(false);
+                                  }}
+                                  className="w-full p-4 hover:bg-gray-50 transition-colors text-left flex gap-3"
+                                >
+                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                                    notification.color === 'blue' ? 'bg-blue-100' :
+                                    notification.color === 'orange' ? 'bg-orange-100' :
+                                    notification.color === 'green' ? 'bg-green-100' :
+                                    'bg-gray-100'
+                                  }`}>
+                                    <IconComponent className={`w-5 h-5 ${
+                                      notification.color === 'blue' ? 'text-blue-600' :
+                                      notification.color === 'orange' ? 'text-orange-600' :
+                                      notification.color === 'green' ? 'text-green-600' :
+                                      'text-gray-600'
+                                    }`} />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-gray-900 text-sm mb-1">
+                                      {notification.title}
+                                    </p>
+                                    <p className="text-gray-600 text-sm mb-1 truncate">
+                                      {notification.message}
+                                    </p>
+                                    <p className="text-gray-400 text-xs">
+                                      {notification.time}
+                                    </p>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Footer */}
+                      {notifications.length > 0 && (
+                        <div className="p-3 border-t border-gray-200 bg-gray-50">
+                          <button 
+                            className="w-full text-center text-sm text-red-600 hover:text-red-700 font-medium"
+                            onClick={() => setShowNotifications(false)}
+                          >
+                            View All Notifications
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            {/* Secondary Tabs - Less Important */}
+            <div className="mb-6">
+              <TabsList className="bg-white border border-gray-200">
+                <TabsTrigger value="banners" className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600">
+                  <Image className="w-4 h-4 mr-2" />
+                  Banners
+                </TabsTrigger>
+                <TabsTrigger value="coupons" className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600">
+                  <DollarSign className="w-4 h-4 mr-2" />
+                  Coupons
+                </TabsTrigger>
+                <TabsTrigger value="categories" className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600">
+                  <FolderTree className="w-4 h-4 mr-2" />
+                  Categories
+                </TabsTrigger>
+                <TabsTrigger value="bankoffers" className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600">
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Bank Offers
+                </TabsTrigger>
+                <TabsTrigger value="referrals" className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600">
+                  <Gift className="w-4 h-4 mr-2" />
+                  Referrals
+                </TabsTrigger>
+                <TabsTrigger value="delivery-partners" className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600">
+                  <User className="w-4 h-4 mr-2" />
+                  Partners
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
@@ -427,6 +749,8 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
           <AdminAnalytics orders={orders} products={products} />
         </TabsContent>
       </Tabs>
+        </div>
+      </div>
     </div>
   );
 }

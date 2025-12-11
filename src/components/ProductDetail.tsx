@@ -36,7 +36,7 @@ export function ProductDetail({
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewSuccess, setReviewSuccess] = useState(false);
-  const [reviews, setReviews] = useState([]);
+  const [reviews, setReviews] = useState<any[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
   const [hasPurchased, setHasPurchased] = useState(false);
   const [checkingPurchase, setCheckingPurchase] = useState(true);
@@ -145,8 +145,10 @@ export function ProductDetail({
       try {
         const { reviewService } = await import('../lib/supabaseService');
         const data = await reviewService.getProductReviews(product.id);
+        console.log('Reviews fetched:', data);
         if (mounted) setReviews(data || []);
       } catch (err) {
+        console.error('Error loading reviews:', err);
         if (mounted) setReviews([]);
       }
       setLoadingReviews(false);

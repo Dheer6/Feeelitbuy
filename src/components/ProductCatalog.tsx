@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Heart, Star, SlidersHorizontal, Package, AlertTriangle } from 'lucide-react';
 import { Product } from '../types';
 import { Button } from './ui/button';
@@ -11,6 +11,8 @@ import { Checkbox } from './ui/checkbox';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { formatINR } from '../lib/currency';
+import { categoryService } from '../lib/supabaseService';
+import type { Category } from '../lib/supabase';
 
 interface ProductCatalogProps {
   category: string;
@@ -39,6 +41,8 @@ export function ProductCatalog({
   const [selectedRating, setSelectedRating] = useState<number>(0);
   const [inStock, setInStock] = useState(false);
   const [onSale, setOnSale] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   // Electronics-specific filters
   const [selectedScreenSizes, setSelectedScreenSizes] = useState<string[]>([]);
@@ -48,6 +52,23 @@ export function ProductCatalog({
   // Furniture-specific filters
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
+
+  // Load categories from database
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setCategoriesLoading(true);
+        const data = await categoryService.getCategories();
+        setCategories(data);
+      } catch (error) {
+        console.error('Error loading categories:', error);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    loadCategories();
+  }, []);
   const [selectedRoomTypes, setSelectedRoomTypes] = useState<string[]>([]);
 
   const filteredProducts = useMemo(() => {
@@ -55,7 +76,7 @@ export function ProductCatalog({
 
     // Filter by category
     if (category !== 'all') {
-      filtered = filtered.filter((p) => p.category === category);
+      filtered = filtered.filter((p) => p.category_id === category || p.category === category);
     }
 
     // Filter by search
@@ -115,7 +136,7 @@ export function ProductCatalog({
 
   const brands = useMemo(() => {
     const categoryProducts =
-      category === 'all' ? products : products.filter((p) => p.category === category);
+      category === 'all' ? products : products.filter((p) => p.category_id === category || p.category === category);
     return Array.from(new Set(categoryProducts.map((p) => p.brand)));
   }, [products, category]);
 
@@ -220,38 +241,34 @@ export function ProductCatalog({
               {onCategoryChange && (
                 <div className="pb-6 border-b">
                   <Label className="mb-3 block font-semibold">Category</Label>
-                  <div className="space-y-2">
-                    <div className="flex items-center">
-                      <Checkbox
-                        id="cat-all"
-                        checked={category === 'all'}
-                        onCheckedChange={() => onCategoryChange('all')}
-                      />
-                      <label htmlFor="cat-all" className="ml-2 text-sm cursor-pointer">
-                        All Products
-                      </label>
+                  {categoriesLoading ? (
+                    <div className="text-sm text-gray-500">Loading categories...</div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex items-center">
+                        <Checkbox
+                          id="cat-all"
+                          checked={category === 'all'}
+                          onCheckedChange={() => onCategoryChange('all')}
+                        />
+                        <label htmlFor="cat-all" className="ml-2 text-sm cursor-pointer">
+                          All Products
+                        </label>
+                      </div>
+                      {categories.map((cat) => (
+                        <div key={cat.id} className="flex items-center">
+                          <Checkbox
+                            id={`cat-${cat.id}`}
+                            checked={category === cat.id}
+                            onCheckedChange={() => onCategoryChange(cat.id)}
+                          />
+                          <label htmlFor={`cat-${cat.id}`} className="ml-2 text-sm cursor-pointer">
+                            {cat.name}
+                          </label>
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex items-center">
-                      <Checkbox
-                        id="cat-electronics"
-                        checked={category === 'electronics'}
-                        onCheckedChange={() => onCategoryChange('electronics')}
-                      />
-                      <label htmlFor="cat-electronics" className="ml-2 text-sm cursor-pointer">
-                        Electronics
-                      </label>
-                    </div>
-                    <div className="flex items-center">
-                      <Checkbox
-                        id="cat-furniture"
-                        checked={category === 'furniture'}
-                        onCheckedChange={() => onCategoryChange('furniture')}
-                      />
-                      <label htmlFor="cat-furniture" className="ml-2 text-sm cursor-pointer">
-                        Furniture
-                      </label>
-                    </div>
-                  </div>
+                  )}
                 </div>
               )}
 

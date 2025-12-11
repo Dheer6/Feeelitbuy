@@ -897,6 +897,7 @@ export default function App() {
             orders={adminOrders}
             onUpdateOrderStatus={handleUpdateOrderStatus}
             onProductsChange={handleProductsRefresh}
+            onNavigate={navigateToPage}
           />
         );
       case 'delivery-signup':
@@ -923,31 +924,118 @@ export default function App() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+      <div className="min-h-screen bg-white flex items-center justify-center relative overflow-hidden">
+        {/* Subtle animated background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-red-50 opacity-50"></div>
+        <div className="absolute top-0 left-0 w-full h-full">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+          <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-orange-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+          <div className="absolute bottom-1/4 left-1/3 w-96 h-96 bg-pink-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
         </div>
+        
+        {/* Main content */}
+        <div className="relative z-10 text-center px-6">
+          {/* Logo container with professional styling */}
+          <div className="mb-8 relative">
+            <div className="inline-block relative">
+              {/* Logo with subtle shadow and animation */}
+              <div className="relative">
+                <img 
+                  src="/fib-logo.png" 
+                  alt="Feel It Buy Logo" 
+                  className="w-32 h-32 object-contain animate-fade-in mx-auto drop-shadow-2xl"
+                  style={{ animation: 'fadeIn 0.8s ease-in-out' }}
+                />
+                {/* Subtle ring around logo */}
+                <div className="absolute inset-0 -m-4">
+                  <div className="w-40 h-40 border-2 border-red-200 rounded-full animate-spin-slow opacity-50"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Brand name with elegant typography */}
+          <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-gray-900 via-red-900 to-gray-900 bg-clip-text text-transparent">
+            Feel It Buy
+          </h1>
+          
+          {/* Tagline with refined spacing */}
+          <p className="text-gray-600 text-lg mb-12 font-light tracking-wide">
+            Experience Shopping Like Never Before
+          </p>
+          
+          {/* Modern loading indicator */}
+          <div className="space-y-6">
+            {/* Progress bar style loader */}
+            <div className="w-64 h-1.5 bg-gray-200 rounded-full mx-auto overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-red-500 to-orange-500 rounded-full animate-progress"></div>
+            </div>
+            
+            {/* Elegant loading text */}
+            <p className="text-sm text-gray-500 font-medium tracking-wider animate-pulse">
+              LOADING
+            </p>
+          </div>
+        </div>
+        
+        {/* Add custom animations */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+          }
+          @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+          @keyframes progress {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(400%); }
+          }
+          @keyframes blob {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(20px, -50px) scale(1.1); }
+            50% { transform: translate(-20px, 20px) scale(0.9); }
+            75% { transform: translate(50px, 50px) scale(1.05); }
+          }
+          .animate-spin-slow {
+            animation: spin-slow 8s linear infinite;
+          }
+          .animate-progress {
+            animation: progress 1.5s ease-in-out infinite;
+          }
+          .animate-blob {
+            animation: blob 7s ease-in-out infinite;
+          }
+          .animation-delay-2000 {
+            animation-delay: 2s;
+          }
+          .animation-delay-4000 {
+            animation-delay: 4s;
+          }
+        ` }} />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header
-        currentUser={currentUser}
-        cartItemCount={cart.reduce((sum: number, item: CartItem) => sum + item.quantity, 0)}
-        wishlistCount={wishlist.length}
-        onNavigate={navigateToPage}
-        onAuthClick={() => {
-          setAuthMode('login');
-          setShowAuthModal(true);
-        }}
-        onLogout={handleLogout}
-        currentPage={currentPage}
-      />
+      {currentPage !== 'admin' && (
+        <Header
+          currentUser={currentUser}
+          cartItemCount={cart.reduce((sum: number, item: CartItem) => sum + item.quantity, 0)}
+          wishlistCount={wishlist.length}
+          onNavigate={navigateToPage}
+          onAuthClick={() => {
+            setAuthMode('login');
+            setShowAuthModal(true);
+          }}
+          onLogout={handleLogout}
+          currentPage={currentPage}
+        />
+      )}
 
-      <main className="pt-16 pb-24 md:pb-8">
+      <main className={currentPage === 'admin' ? '' : 'pt-16 pb-24 md:pb-8'}>
         {productsLoading && (
           <div className="container mx-auto px-4 py-4 text-sm text-gray-500">Loading products...</div>
         )}

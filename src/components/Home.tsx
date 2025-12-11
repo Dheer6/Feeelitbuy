@@ -58,6 +58,112 @@ interface HomeProps {
   onSearch?: (query: string) => void;
 }
 
+// Counter component for animated stats
+function StatCard({ 
+  icon: Icon, 
+  value, 
+  suffix, 
+  label, 
+  color, 
+  inView 
+}: { 
+  icon: any; 
+  value: number; 
+  suffix: string; 
+  label: string; 
+  color: string; 
+  inView: boolean;
+}) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!inView) return;
+
+    let startTime: number | null = null;
+    const duration = 2000;
+    
+    const animate = (currentTime: number) => {
+      if (startTime === null) startTime = currentTime;
+      const progress = Math.min((currentTime - startTime) / duration, 1);
+      
+      const easeOutQuad = (t: number) => t * (2 - t);
+      const currentCount = Math.floor(value * easeOutQuad(progress));
+      
+      setCount(currentCount);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }, [value, inView]);
+
+  const gradients = {
+    'from-blue-500 to-cyan-500': 'linear-gradient(to bottom right, #3b82f6, #06b6d4)',
+    'from-purple-500 to-pink-500': 'linear-gradient(to bottom right, #a855f7, #ec4899)',
+    'from-green-500 to-emerald-500': 'linear-gradient(to bottom right, #22c55e, #10b981)',
+    'from-orange-500 to-red-500': 'linear-gradient(to bottom right, #f97316, #ef4444)'
+  };
+
+  return (
+    <div
+      style={{ textAlign: 'center', transition: 'transform 0.3s', cursor: 'pointer' }}
+      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+    >
+      <div style={{
+        width: '6rem',
+        height: '6rem',
+        margin: '0 auto 1.5rem',
+        borderRadius: '1.5rem',
+        background: gradients[color as keyof typeof gradients],
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+        transition: 'all 0.3s'
+      }}>
+        <Icon style={{ width: '3rem', height: '3rem', color: 'white' }} />
+      </div>
+      <h3 style={{ fontSize: '2.25rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>
+        {count}{suffix}
+      </h3>
+      <p style={{ color: '#4b5563', fontWeight: '600', fontSize: '1.125rem' }}>{label}</p>
+    </div>
+  );
+}
+
+// Simple counter for download stats
+function AnimatedNumber({ value, inView }: { value: number; inView: boolean }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!inView) return;
+
+    let startTime: number | null = null;
+    const duration = 2000;
+    
+    const animate = (currentTime: number) => {
+      if (startTime === null) startTime = currentTime;
+      const progress = Math.min((currentTime - startTime) / duration, 1);
+      
+      const easeOutQuad = (t: number) => t * (2 - t);
+      const currentCount = Math.floor(value * easeOutQuad(progress));
+      
+      setCount(currentCount);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }, [value, inView]);
+
+  return <>{count}</>;
+}
+
 export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onSearch }: HomeProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -67,6 +173,82 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onS
   const [banners, setBanners] = useState<HeroBanner[]>([]);
   const [currentBanner, setCurrentBanner] = useState(0);
   const [bannersLoading, setBannersLoading] = useState(true);
+  const [statsInView, setStatsInView] = useState(false);
+  const [downloadStatsInView, setDownloadStatsInView] = useState(false);
+  const statsRef = useRef<HTMLDivElement>(null);
+  const downloadStatsRef = useRef<HTMLDivElement>(null);
+
+  // Counter animation hook
+  const useCountUp = (end: number, duration: number = 2000, start: number = 0) => {
+    const [count, setCount] = useState(start);
+
+    useEffect(() => {
+      if (!statsInView) return;
+
+      let startTime: number | null = null;
+      const animate = (currentTime: number) => {
+        if (startTime === null) startTime = currentTime;
+        const progress = Math.min((currentTime - startTime) / duration, 1);
+        
+        const easeOutQuad = (t: number) => t * (2 - t);
+        const currentCount = Math.floor(start + (end - start) * easeOutQuad(progress));
+        
+        setCount(currentCount);
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        }
+      };
+
+      requestAnimationFrame(animate);
+    }, [end, duration, start, statsInView]);
+
+    return count;
+  };
+
+  // Intersection observer for stats
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !statsInView) {
+          setStatsInView(true);
+        }
+      },
+      { threshold: 0.3 }
+    );
+
+    if (statsRef.current) {
+      observer.observe(statsRef.current);
+    }
+
+    return () => {
+      if (statsRef.current) {
+        observer.unobserve(statsRef.current);
+      }
+    };
+  }, [statsInView]);
+
+  // Intersection observer for download stats
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !downloadStatsInView) {
+          setDownloadStatsInView(true);
+        }
+      },
+      { threshold: 0.3 }
+    );
+
+    if (downloadStatsRef.current) {
+      observer.observe(downloadStatsRef.current);
+    }
+
+    return () => {
+      if (downloadStatsRef.current) {
+        observer.unobserve(downloadStatsRef.current);
+      }
+    };
+  }, [downloadStatsInView]);
 
   // Load Bootstrap CSS only when this component mounts
   useEffect(() => {
@@ -603,43 +785,41 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onS
        
 
         {/* Stats Section */}
-        <section style={{ padding: 'clamp(2.5rem, 5vw, 4rem) 0', background: 'linear-gradient(to bottom, #f9fafb, white)' }}>
+        <section ref={statsRef} style={{ padding: 'clamp(2.5rem, 5vw, 4rem) 0', background: 'linear-gradient(to bottom, #f9fafb, white)' }}>
           <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1rem' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 'clamp(1rem, 2vw, 2rem)' }}>
-              {stats.map((stat, index) => {
-                const Icon = stat.icon;
-                const gradients = {
-                  'from-blue-500 to-cyan-500': 'linear-gradient(to bottom right, #3b82f6, #06b6d4)',
-                  'from-purple-500 to-pink-500': 'linear-gradient(to bottom right, #a855f7, #ec4899)',
-                  'from-green-500 to-emerald-500': 'linear-gradient(to bottom right, #22c55e, #10b981)',
-                  'from-orange-500 to-red-500': 'linear-gradient(to bottom right, #f97316, #ef4444)'
-                };
-                return (
-                  <div
-                    key={index}
-                    style={{ textAlign: 'center', transition: 'transform 0.3s', cursor: 'pointer' }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                  >
-                    <div style={{
-                      width: '6rem',
-                      height: '6rem',
-                      margin: '0 auto 1.5rem',
-                      borderRadius: '1.5rem',
-                      background: gradients[stat.color as keyof typeof gradients],
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-                      transition: 'all 0.3s'
-                    }}>
-                      <Icon style={{ width: '3rem', height: '3rem', color: 'white' }} />
-                    </div>
-                    <h3 style={{ fontSize: '2.25rem', fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>{stat.value}</h3>
-                    <p style={{ color: '#4b5563', fontWeight: '600', fontSize: '1.125rem' }}>{stat.label}</p>
-                  </div>
-                );
-              })}
+              <StatCard
+                icon={Package2}
+                value={50}
+                suffix="K+"
+                label="Products"
+                color="from-blue-500 to-cyan-500"
+                inView={statsInView}
+              />
+              <StatCard
+                icon={Users}
+                value={100}
+                suffix="K+"
+                label="Happy Customers"
+                color="from-purple-500 to-pink-500"
+                inView={statsInView}
+              />
+              <StatCard
+                icon={TrendingUp}
+                value={99}
+                suffix="%"
+                label="Satisfaction Rate"
+                color="from-green-500 to-emerald-500"
+                inView={statsInView}
+              />
+              <StatCard
+                icon={Award}
+                value={500}
+                suffix="+"
+                label="Brands"
+                color="from-orange-500 to-red-500"
+                inView={statsInView}
+              />
             </div>
           </div>
         </section>
@@ -1658,13 +1838,17 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onS
                 </div>
 
                 {/* Stats */}
-                <div className="download-app-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2.5rem', paddingTop: '2.5rem', borderTop: '2px solid rgba(255, 255, 255, 0.2)' }}>
+                <div ref={downloadStatsRef} className="download-app-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2.5rem', paddingTop: '2.5rem', borderTop: '2px solid rgba(255, 255, 255, 0.2)' }}>
                   <div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '0.25rem' }}>50K+</div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '0.25rem' }}>
+                      <AnimatedNumber value={50} inView={downloadStatsInView} />K+
+                    </div>
                     <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Downloads</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '0.25rem' }}>4.8⭐</div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '0.25rem' }}>
+                      <AnimatedNumber value={4} inView={downloadStatsInView} />.8⭐
+                    </div>
                     <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Rating</div>
                   </div>
                   <div>
