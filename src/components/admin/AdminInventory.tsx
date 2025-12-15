@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Product } from '../../types';
 import { Card } from '../ui/card';
 import { Input } from '../ui/input';
@@ -265,8 +265,8 @@ export function AdminInventory({ products, onUpdateStock, onUpdateColorStock }: 
                 const isExpanded = expandedProducts.has(product.id);
                 
                 return (
-                  <>
-                    <tr key={product.id} className="border-b hover:bg-gray-50">
+                  <React.Fragment key={product.id}>
+                    <tr className="border-b hover:bg-gray-50">
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3">
                           {hasColors && (
@@ -407,7 +407,7 @@ export function AdminInventory({ products, onUpdateStock, onUpdateColorStock }: 
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 );
               })}
             </tbody>

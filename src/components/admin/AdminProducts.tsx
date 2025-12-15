@@ -297,7 +297,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
           category_id: formData.category_id,
           brand: formData.brand,
           discount: baseDiscount > 0 ? baseDiscount : undefined,
-          original_price: baseDiscount > 0 ? originalPrice : undefined,
+          original_price: baseDiscount > 0 && originalPrice >= basePrice ? originalPrice : null,
           colors: colorsWithDefault,
           rotation_images: formData.rotation_images.length > 0 ? formData.rotation_images : undefined,
         } as any);
@@ -319,7 +319,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
           brand: formData.brand,
           is_featured: false,
           discount: baseDiscount > 0 ? baseDiscount : undefined,
-          original_price: baseDiscount > 0 ? originalPrice : undefined,
+          original_price: baseDiscount > 0 && originalPrice >= basePrice ? originalPrice : null,
           colors: colorsWithDefault,
           rotation_images: formData.rotation_images.length > 0 ? formData.rotation_images : undefined,
         } as any);
@@ -908,80 +908,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
             </div>
 
             {/* 360° Rotation Images Section */}
-            <div className="space-y-3 border-t pt-4">
-              <div className="flex items-center gap-2">
-                <RotateCw className="w-5 h-5 text-indigo-600" />
-                <Label className="text-base font-semibold">360° Product Viewer (Optional)</Label>
-              </div>
-              <p className="text-xs text-gray-600">Upload 24+ images for smooth 360° rotation</p>
-              
-              {/* Upload Button */}
-              <div className="border-2 border-dashed rounded-lg p-4 text-center bg-gray-50">
-                <div className="flex flex-col items-center gap-2">
-                  <Upload className="w-8 h-8 text-gray-400" />
-                  <div>
-                    <p className="font-semibold text-sm">Upload Rotation Images</p>
-                    <p className="text-xs text-gray-500">Select multiple images</p>
-                  </div>
-                  <label className="cursor-pointer">
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={handleRotationImageUpload}
-                      disabled={uploadingRotation}
-                      className="hidden"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={uploadingRotation}
-                      as="span"
-                    >
-                      {uploadingRotation ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Uploading...
-                        </>
-                      ) : (
-                        'Select Images'
-                      )}
-                    </Button>
-                  </label>
-                </div>
-              </div>
-
-              {/* Uploaded Images Grid */}
-              {formData.rotation_images.length > 0 && (
-                <div className="space-y-2">
-                  <p className="font-semibold text-sm">{formData.rotation_images.length} images uploaded</p>
-                  <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto p-2 border rounded-lg">
-                    {formData.rotation_images.map((image, idx) => (
-                      <div key={idx} className="relative group">
-                        <img
-                          src={image}
-                          alt={`360-${idx}`}
-                          className="w-full h-16 object-cover rounded border"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveRotationImage(idx)}
-                          className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition text-red-600 hover:bg-red-50 p-1 h-auto"
-                        >
-                          <X className="w-3 h-3" />
-                        </Button>
-                        <Badge variant="outline" className="absolute bottom-1 left-1 text-xs px-1 py-0">
-                          {idx + 1}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            {/*  */}
           </div>
           <DialogFooter className="px-6 py-4 border-t bg-gray-50">
             <Button variant="outline" onClick={() => setShowDialog(false)}>

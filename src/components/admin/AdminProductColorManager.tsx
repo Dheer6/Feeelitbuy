@@ -179,74 +179,7 @@ export function AdminProductColorManager({ productId, onSave }: AdminProductEdit
         </div>
       </Card>
 
-      {/* 360° Rotation Images */}
-      <Card className="p-6">
-        <h3 className="text-lg font-bold mb-4">360° Product Viewer Images</h3>
-        
-        <div className="space-y-4">
-          {/* Upload Images */}
-          <div className="border-2 border-dashed rounded-lg p-6 text-center">
-            <div className="flex flex-col items-center gap-2">
-              <Upload className="w-8 h-8 text-gray-400" />
-              <div>
-                <p className="font-semibold">Upload 360° Images</p>
-                <p className="text-sm text-gray-500">Drag and drop or click to select multiple images</p>
-              </div>
-              <label>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleRotationImageUpload}
-                  disabled={uploading}
-                  className="hidden"
-                />
-                <Button
-                  as="span"
-                  variant="outline"
-                  disabled={uploading}
-                  className="cursor-pointer"
-                >
-                  {uploading ? 'Uploading...' : 'Select Images'}
-                </Button>
-              </label>
-            </div>
-          </div>
-
-          {/* Uploaded Images */}
-          {rotationImages.length > 0 && (
-            <div className="space-y-2">
-              <p className="font-semibold text-sm">{rotationImages.length} images uploaded</p>
-              <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-                {rotationImages.map((image, idx) => (
-                  <div key={idx} className="relative group">
-                    <img
-                      src={image}
-                      alt={`360-${idx}`}
-                      className="w-full h-24 object-cover rounded border"
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRemoveImage(idx)}
-                      className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition text-red-600 hover:bg-red-50"
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                    <Badge variant="outline" className="absolute bottom-1 left-1 text-xs">
-                      {idx + 1}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-gray-500">
-                Tip: Upload 24+ images for smooth 360° rotation
-              </p>
-            </div>
-          )}
-        </div>
-      </Card>
-
+     
       {/* Save Button */}
       <div className="flex justify-end gap-2">
         <Button
