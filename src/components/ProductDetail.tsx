@@ -276,11 +276,11 @@ export function ProductDetail({
             ))}
           </div>
           <div className="flex-1 space-y-4">
-            <div className="rounded-lg overflow-hidden bg-gray-100 relative" style={{ aspectRatio: '1/1' }}>
+            <div className="rounded-lg overflow-hidden bg-gray-100 relative flex items-center justify-center" style={{ aspectRatio: '1/1', minHeight: '400px' }}>
               <ImageWithFallback
                 src={displayImages[selectedImage] || ''}
                 alt={product.name}
-                className="w-full h-full object-contain"
+                className="max-w-full max-h-full object-contain"
                 style={{ maxHeight: '600px' }}
               />
               {/* 360° Rotation Button */}

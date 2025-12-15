@@ -131,13 +131,18 @@ export function AddressManager() {
     }
 
     try {
-      // Try to geocode if we don't have coordinates
+      // Try to geocode if we don't have coordinates (optional, won't block saving)
       if (!formData.latitude || !formData.longitude) {
-        const fullAddress = `${formData.address_line1}, ${formData.city}, ${formData.state}, ${formData.postal_code}, ${formData.country}`;
-        const coords = await addressService.geocodeAddress(fullAddress);
-        if (coords) {
-          formData.latitude = coords.latitude;
-          formData.longitude = coords.longitude;
+        try {
+          const fullAddress = `${formData.address_line1}, ${formData.city}, ${formData.state}, ${formData.postal_code}, ${formData.country}`;
+          const coords = await addressService.geocodeAddress(fullAddress);
+          if (coords) {
+            formData.latitude = coords.latitude;
+            formData.longitude = coords.longitude;
+          }
+        } catch (geocodeError) {
+          // Geocoding failed, but continue saving address without coordinates
+          console.warn('Geocoding failed, saving address without coordinates:', geocodeError);
         }
       }
 
@@ -149,9 +154,17 @@ export function AddressManager() {
 
       setShowDialog(false);
       loadAddresses();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save address:', error);
-      alert('Failed to save address');
+      
+      // Provide helpful error messages
+      if (error.message?.includes('label')) {
+        alert('Database error: The addresses table is not set up correctly. Please run the create_addresses_table.sql migration in Supabase.');
+      } else if (error.code === 'PGRST204') {
+        alert('Database error: The addresses table schema is outdated. Please run the latest migration in Supabase.');
+      } else {
+        alert(`Failed to save address: ${error.message || 'Unknown error'}`);
+      }
     }
   };
 

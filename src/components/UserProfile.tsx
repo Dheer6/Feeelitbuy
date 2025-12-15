@@ -1,4 +1,4 @@
-import { User, Mail, Phone, Calendar, Package, Edit2, Save, X, MapPin } from 'lucide-react';
+import { User, Mail, Phone, Calendar, Package, Edit2, Save, X, MapPin, Wallet } from 'lucide-react';
 import { User as UserType, Order } from '../types';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
@@ -6,7 +6,7 @@ import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { authService } from '../lib/supabaseService';
 import { formatINR } from '../lib/currency';
 import { AddressManager } from './AddressManager';
@@ -26,6 +26,29 @@ export function UserProfile({ user, orders, onViewOrder }: UserProfileProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [loadingWallet, setLoadingWallet] = useState(true);
+
+  // Load wallet balance
+  useEffect(() => {
+    const fetchWallet = async () => {
+      if (!user) {
+        setLoadingWallet(false);
+        return;
+      }
+      try {
+        const { walletService } = await import('../lib/supabaseService');
+        const wallet = await walletService.getWallet();
+        setWalletBalance(wallet?.balance || 0);
+      } catch (err) {
+        console.error('Failed to load wallet:', err);
+        setWalletBalance(0);
+      } finally {
+        setLoadingWallet(false);
+      }
+    };
+    fetchWallet();
+  }, [user]);
 
   if (!user) {
     return (
@@ -224,6 +247,33 @@ export function UserProfile({ user, orders, onViewOrder }: UserProfileProps) {
                 </p>
               </div>
             </div>
+          </Card>
+
+          {/* Wallet Balance */}
+          <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="flex items-center gap-2">
+                <Wallet className="w-5 h-5 text-green-600" />
+                Wallet
+              </h3>
+            </div>
+            {loadingWallet ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Available Balance</p>
+                  <p className="text-3xl font-bold text-green-600">{formatINR(walletBalance)}</p>
+                </div>
+                <div className="pt-3 border-t border-green-200">
+                  <p className="text-xs text-gray-600">
+                    💡 Use your wallet coins at checkout to get up to 50% off your order total!
+                  </p>
+                </div>
+              </div>
+            )}
           </Card>
         </div>
 

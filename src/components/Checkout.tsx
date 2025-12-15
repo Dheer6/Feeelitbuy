@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, CreditCard, Wallet, Building2, Banknote, Loader2 } from 'lucide-react';
+import { ArrowLeft, CreditCard, Wallet, Building2, Banknote, Loader2, MapPin } from 'lucide-react';
 import { CartItem, User, Address } from '../types';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -40,6 +40,9 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
   const [paymentMethod, setPaymentMethod] = useState('razorpay');
   const [isProcessing, setIsProcessing] = useState(false);
   const [loadingAddress, setLoadingAddress] = useState(true);
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [showManualEntry, setShowManualEntry] = useState(false);
 
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const shipping = subtotal > 500 ? 0 : 25;
@@ -130,21 +133,27 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
       try {
         const addresses = await addressService.getAddresses();
         if (addresses && addresses.length > 0) {
-          // Use the most recent address
-          const latestAddress = addresses[0] as any;
+          setSavedAddresses(addresses);
+          // Use the default address or the first one
+          const defaultAddr = addresses.find((addr: any) => addr.is_default) || addresses[0];
+          setSelectedAddressId(defaultAddr.id);
           setShippingDetails({
-            name: user.name || '',
-            street: latestAddress.address_line1 || '',
-            city: latestAddress.city || '',
-            state: latestAddress.state || '',
-            zipCode: latestAddress.postal_code || '',
-            country: latestAddress.country || 'India',
-            phone: latestAddress.phone || user.phone || '',
-            alternatePhone: latestAddress.alternate_phone || '',
+            name: defaultAddr.full_name || user.name || '',
+            street: defaultAddr.address_line1 || '',
+            city: defaultAddr.city || '',
+            state: defaultAddr.state || '',
+            zipCode: defaultAddr.postal_code || '',
+            country: defaultAddr.country || 'India',
+            phone: defaultAddr.phone || user.phone || '',
+            alternatePhone: defaultAddr.alternate_phone || '',
           });
+        } else {
+          // No saved addresses, show manual entry
+          setShowManualEntry(true);
         }
       } catch (error) {
         console.error('Failed to load saved address:', error);
+        setShowManualEntry(true);
       } finally {
         setLoadingAddress(false);
       }
@@ -152,6 +161,24 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
 
     loadSavedAddress();
   }, [user]);
+
+  const handleAddressSelect = (addressId: string) => {
+    const selected = savedAddresses.find(addr => addr.id === addressId);
+    if (selected) {
+      setSelectedAddressId(addressId);
+      setShippingDetails({
+        name: selected.full_name || user?.name || '',
+        street: selected.address_line1 || '',
+        city: selected.city || '',
+        state: selected.state || '',
+        zipCode: selected.postal_code || '',
+        country: selected.country || 'India',
+        phone: selected.phone || user?.phone || '',
+        alternatePhone: selected.alternate_phone || '',
+      });
+      setShowManualEntry(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -258,6 +285,81 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
             {/* Shipping Information */}
             <Card className="p-6">
               <h2 className="mb-6">Shipping Information</h2>
+              
+              {/* Saved Addresses */}
+              {savedAddresses.length > 0 && !showManualEntry && (
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <Label className="text-base font-semibold">Select Delivery Address</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowManualEntry(true)}
+                    >
+                      + Add New Address
+                    </Button>
+                  </div>
+                  <RadioGroup value={selectedAddressId || ''} onValueChange={handleAddressSelect}>
+                    <div className="space-y-3">
+                      {savedAddresses.map((address) => (
+                        <label
+                          key={address.id}
+                          className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                            selectedAddressId === address.id
+                              ? 'border-indigo-600 bg-indigo-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <RadioGroupItem value={address.id} className="mt-1" />
+                          <div className="ml-3 flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <MapPin className="w-4 h-4 text-gray-500" />
+                              <span className="font-semibold text-gray-900">{address.label || 'Address'}</span>
+                              {address.is_default && (
+                                <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">Default</span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-900 font-medium">{address.full_name}</p>
+                            <p className="text-sm text-gray-600 mt-1">
+                              {address.address_line1}
+                              {address.address_line2 && `, ${address.address_line2}`}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {address.city}, {address.state} - {address.postal_code}
+                            </p>
+                            <p className="text-sm text-gray-600 mt-1">
+                              Phone: {address.phone}
+                              {address.alternate_phone && ` | ${address.alternate_phone}`}
+                            </p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </RadioGroup>
+                </div>
+              )}
+
+              {/* Manual Entry Form */}
+              {(showManualEntry || savedAddresses.length === 0) && (
+                <>
+                  {savedAddresses.length > 0 && (
+                    <div className="mb-4">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setShowManualEntry(false);
+                          if (savedAddresses.length > 0) {
+                            handleAddressSelect(savedAddresses[0].id);
+                          }
+                        }}
+                      >
+                        ← Back to Saved Addresses
+                      </Button>
+                    </div>
+                  )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <Label htmlFor="name">Full Name</Label>
@@ -354,8 +456,8 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
                     required
                   />
                 </div>
-              </div>
-            </Card>
+              </div>              </>
+            )}            </Card>
 
             {/* Payment Method */}
             <Card className="p-6">

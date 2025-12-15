@@ -2065,32 +2065,60 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onS
                     padding: '2rem',
                     borderRadius: '1rem',
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                    transition: 'all 0.3s',
+                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    filter: 'grayscale(50%)'
+                    filter: 'grayscale(50%)',
+                    animation: `brandFloat ${3 + (index % 3)}s ease-in-out infinite`,
+                    animationDelay: `${index * 0.2}s`
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
-                    e.currentTarget.style.transform = 'scale(1.1)';
+                    e.currentTarget.style.transform = 'translateY(-15px) scale(1.1) rotate(2deg)';
                     e.currentTarget.style.filter = 'grayscale(0%)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-                    e.currentTarget.style.transform = 'scale(1)';
-                    e.currentTarget.style.filter = 'grayscale(100%)';
+                    e.currentTarget.style.transform = 'translateY(0) scale(1) rotate(0deg)';
+                    e.currentTarget.style.filter = 'grayscale(50%)';
                   }}
                 >
                   <img
                     src={brand.logo}
                     alt={brand.name}
-                    style={{ maxHeight: '3rem', width: 'auto', objectFit: 'contain' }}
+                    style={{ 
+                      maxHeight: '3rem', 
+                      width: 'auto', 
+                      objectFit: 'contain',
+                      transition: 'transform 0.3s ease'
+                    }}
                   />
                 </div>
               ))}
             </div>
           </div>
+          
+          {/* Add CSS animations */}
+          <style dangerouslySetInnerHTML={{ __html: `
+            @keyframes brandFloat {
+              0%, 100% {
+                transform: translateY(0px);
+              }
+              50% {
+                transform: translateY(-10px);
+              }
+            }
+            
+            @keyframes brandPulse {
+              0%, 100% {
+                opacity: 1;
+              }
+              50% {
+                opacity: 0.8;
+              }
+            }
+          ` }} />
         </section>
 
         {/* Download App Section */}

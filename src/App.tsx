@@ -53,6 +53,7 @@ export default function App() {
   const [wishlistHydrated, setWishlistHydrated] = useState(false);
   const [ordersHydrated, setOrdersHydrated] = useState(false);
   const [loadingProductFromUrl, setLoadingProductFromUrl] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
 
   // Sync URL with current page on mount and handle browser navigation
   useEffect(() => {
@@ -252,6 +253,27 @@ export default function App() {
       setAuthLoading(false);
     }
   };
+
+  // Animate loading progress
+  useEffect(() => {
+    if (authLoading || loadingProductFromUrl) {
+      setLoadingProgress(0);
+      const interval = setInterval(() => {
+        setLoadingProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(interval);
+            return 90;
+          }
+          return prev + Math.random() * 15;
+        });
+      }, 200);
+      
+      return () => clearInterval(interval);
+    } else {
+      // Complete the progress quickly when loading is done
+      setLoadingProgress(100);
+    }
+  }, [authLoading, loadingProductFromUrl]);
 
   // Load products from Supabase (after auth check completes so RLS applies if needed)
   useEffect(() => {
@@ -1011,10 +1033,6 @@ export default function App() {
                   className="w-32 h-32 object-contain animate-fade-in mx-auto drop-shadow-2xl"
                   style={{ animation: 'fadeIn 0.8s ease-in-out' }}
                 />
-                {/* Subtle ring around logo */}
-                <div className="absolute inset-0 -m-4">
-                  <div className="w-40 h-40 border-2 border-red-200 rounded-full animate-spin-slow opacity-50"></div>
-                </div>
               </div>
             </div>
           </div>
@@ -1029,17 +1047,25 @@ export default function App() {
             Experience Shopping Like Never Before
           </p>
           
-          {/* Modern loading indicator */}
+          {/* Modern loading indicator with percentage */}
           <div className="space-y-6">
-            {/* Progress bar style loader */}
-            <div className="w-64 h-1.5 bg-gray-200 rounded-full mx-auto overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-red-500 to-orange-500 rounded-full animate-progress"></div>
+            {/* Loading percentage */}
+            <div className="mb-4">
+              <p className="text-4xl font-bold text-gray-800 mb-2">
+                {Math.round(loadingProgress)}%
+              </p>
+              <p className="text-sm text-gray-500 font-medium tracking-wider">
+                Loading your shopping experience...
+              </p>
             </div>
             
-            {/* Elegant loading text */}
-            <p className="text-sm text-gray-500 font-medium tracking-wider animate-pulse">
-              LOADING
-            </p>
+            {/* Progress bar style loader */}
+            <div className="w-64 h-2 bg-gray-200 rounded-full mx-auto overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-red-500 to-orange-500 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${loadingProgress}%` }}
+              ></div>
+            </div>
           </div>
         </div>
         

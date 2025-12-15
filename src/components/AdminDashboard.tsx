@@ -197,8 +197,8 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
           </div>
         </div>
         
-        {/* Navigation */}
-        <nav className={`flex-1 space-y-2 overflow-y-auto ${sidebarCollapsed ? 'p-3' : 'p-6'}`}>
+        {/* Navigation - Scrollable */}
+        <nav className={`flex-1 space-y-2 overflow-y-auto pb-4 ${sidebarCollapsed ? 'p-3' : 'p-6'}`}>
           <button
             onClick={() => setActiveTab('overview')}
             className={`w-full flex items-center rounded-lg transition-all ${
@@ -318,8 +318,8 @@ export function AdminDashboard({ products, orders, onUpdateOrderStatus, onProduc
           </button>
         </nav>
 
-        {/* Bottom Actions */}
-        <div className={`border-t border-gray-200 space-y-2 ${sidebarCollapsed ? 'p-3' : 'p-6'}`}>
+        {/* Bottom Actions - Sticky at bottom */}
+        <div className={`mt-auto border-t border-gray-200 space-y-2 bg-white ${sidebarCollapsed ? 'p-3' : 'p-6'}`}>
           <Button 
             variant="ghost" 
             size="sm" 

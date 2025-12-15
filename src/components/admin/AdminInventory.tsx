@@ -17,7 +17,9 @@ import {
   Minus,
   CheckCircle,
   XCircle,
-  Palette
+  Palette,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 
 interface AdminInventoryProps {
@@ -34,6 +36,7 @@ export function AdminInventory({ products, onUpdateStock, onUpdateColorStock }: 
   const [lowStockThreshold, setLowStockThreshold] = useState(10);
   const [filterStatus, setFilterStatus] = useState('all' as 'all' | 'low' | 'out' | 'healthy');
   const [editingColors, setEditingColors] = useState<Array<{ name: string; hex: string; stock: number; images?: string[]; price?: number; discount?: number }>>([]);
+  const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
 
   // Calculate inventory metrics
   const totalProducts = products.length;
@@ -118,6 +121,16 @@ export function AdminInventory({ products, onUpdateStock, onUpdateColorStock }: 
   const handleQuickAdjust = (product: Product, adjustment: number) => {
     const newStock = Math.max(0, product.stock + adjustment);
     onUpdateStock(product.id, newStock, product.lowStockThreshold);
+  };
+
+  const toggleProductExpand = (productId: string) => {
+    const newExpanded = new Set(expandedProducts);
+    if (newExpanded.has(productId)) {
+      newExpanded.delete(productId);
+    } else {
+      newExpanded.add(productId);
+    }
+    setExpandedProducts(newExpanded);
   };
 
   return (
@@ -248,90 +261,153 @@ export function AdminInventory({ products, onUpdateStock, onUpdateColorStock }: 
             <tbody>
               {filteredProducts.map((product) => {
                 const status = getStockStatus(product);
+                const hasColors = product.colors && product.colors.length > 0;
+                const isExpanded = expandedProducts.has(product.id);
+                
                 return (
-                  <tr key={product.id} className="border-b hover:bg-gray-50">
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-3">
-                        <img 
-                          src={product.images[0]} 
-                          alt={product.name}
-                          className="w-12 h-12 object-cover rounded"
-                        />
-                        <div>
-                          <p className="font-medium">{product.name}</p>
-                          <p className="text-sm text-gray-600">{product.brand}</p>
+                  <>
+                    <tr key={product.id} className="border-b hover:bg-gray-50">
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          {hasColors && (
+                            <button
+                              onClick={() => toggleProductExpand(product.id)}
+                              className="p-1 hover:bg-gray-200 rounded transition-colors"
+                              title={isExpanded ? "Collapse colors" : "Expand colors"}
+                            >
+                              {isExpanded ? (
+                                <ChevronDown className="w-4 h-4 text-gray-600" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4 text-gray-600" />
+                              )}
+                            </button>
+                          )}
+                          <img 
+                            src={product.images[0]} 
+                            alt={product.name}
+                            className="w-12 h-12 object-cover rounded"
+                          />
+                          <div>
+                            <p className="font-medium">{product.name}</p>
+                            <p className="text-sm text-gray-600">{product.brand}</p>
+                            {hasColors && (
+                              <span className="text-xs text-blue-600 flex items-center gap-1 mt-1">
+                                <Palette className="w-3 h-3" />
+                                {product.colors.length} colors
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4">
-                      <span className="capitalize text-sm">{product.category}</span>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <span className="font-semibold text-lg">{product.stock}</span>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      {status === 'healthy' && (
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          In Stock
-                        </Badge>
-                      )}
-                      {status === 'low' && (
-                        <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                          <AlertTriangle className="w-3 h-3 mr-1" />
-                          Low Stock
-                        </Badge>
-                      )}
-                      {status === 'out' && (
-                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                          <XCircle className="w-3 h-3 mr-1" />
-                          Out of Stock
-                        </Badge>
-                      )}
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      ₹{product.price.toFixed(2)}
-                    </td>
-                    <td className="py-4 px-4 text-center font-semibold">
-                      ₹{(product.price * product.stock).toFixed(2)}
-                    </td>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center justify-center gap-2">
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="capitalize text-sm">{product.category}</span>
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        <span className="font-semibold text-lg">{product.stock}</span>
+                        {hasColors && (
+                          <span className="text-xs text-gray-500 block mt-1">Total</span>
+                        )}
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        {status === 'healthy' && (
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            In Stock
+                          </Badge>
+                        )}
+                        {status === 'low' && (
+                          <Badge variant="outline" className="bg-orange-500 text-white border-orange-600">
+                            <AlertTriangle className="w-3 h-3 mr-1" />
+                            Low Stock
+                          </Badge>
+                        )}
+                        {status === 'out' && (
+                          <Badge variant="outline" className="bg-red-500 text-white border-red-600">
+                            <XCircle className="w-3 h-3 mr-1" />
+                            Out of Stock
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        ₹{product.price.toFixed(2)}
+                      </td>
+                      <td className="py-4 px-4 text-center font-semibold">
+                        ₹{(product.price * product.stock).toFixed(2)}
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleQuickAdjust(product, -1)}
+                            disabled={product.stock === 0}
+                          >
+                            <Minus className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleQuickAdjust(product, 1)}
+                          >
+                            <Plus className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleQuickAdjust(product, 10)}
+                          >
+                            +10
+                          </Button>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 text-center">
                         <Button
                           size="sm"
-                          variant="outline"
-                          onClick={() => handleQuickAdjust(product, -1)}
-                          disabled={product.stock === 0}
+                          variant="default"
+                          onClick={() => handleEditStock(product)}
                         >
-                          <Minus className="w-3 h-3" />
+                          <Edit className="w-4 h-4 mr-1" />
+                          Edit
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleQuickAdjust(product, 1)}
-                        >
-                          <Plus className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleQuickAdjust(product, 10)}
-                        >
-                          +10
-                        </Button>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <Button
-                        size="sm"
-                        variant="default"
-                        onClick={() => handleEditStock(product)}
-                      >
-                        <Edit className="w-4 h-4 mr-1" />
-                        Edit
-                      </Button>
-                    </td>
-                  </tr>
+                      </td>
+                    </tr>
+                    
+                    {/* Expanded color variants row */}
+                    {hasColors && isExpanded && (
+                      <tr key={`${product.id}-colors`} className="bg-gray-50 border-b">
+                        <td colSpan={8} className="py-4 px-8">
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                              <Palette className="w-4 h-4" />
+                              <span>Color Variant Stocks</span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                              {product.colors.map((color, idx) => (
+                                <div key={idx} className="bg-white p-3 rounded-lg border flex items-center gap-3">
+                                  <div
+                                    className="w-10 h-10 rounded border-2 border-gray-300 flex-shrink-0"
+                                    style={{ backgroundColor: color.hex }}
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-sm truncate">{color.name}</p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <span className="text-xs text-gray-600">Stock:</span>
+                                      <span className="font-semibold text-sm">{color.stock}</span>
+                                      {color.price && (
+                                        <span className="text-xs text-gray-500">
+                                          • ₹{color.price.toFixed(2)}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 );
               })}
             </tbody>

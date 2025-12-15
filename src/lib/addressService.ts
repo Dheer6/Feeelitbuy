@@ -108,9 +108,21 @@ export const addressService = {
   async geocodeAddress(address: string): Promise<{ latitude: number; longitude: number } | null> {
     try {
       // Using OpenStreetMap Nominatim API (free, no API key required)
+      // Note: Add User-Agent and referer to comply with usage policy
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
+        {
+          headers: {
+            'User-Agent': 'FeelItBuy-App/1.0',
+            'Referer': window.location.origin
+          }
+        }
       );
+      
+      if (!response.ok) {
+        throw new Error(`Geocoding API returned ${response.status}`);
+      }
+      
       const data = await response.json();
       
       if (data && data.length > 0) {
@@ -122,6 +134,7 @@ export const addressService = {
       return null;
     } catch (error) {
       console.error('Geocoding failed:', error);
+      // Return null instead of throwing, making geocoding optional
       return null;
     }
   },
