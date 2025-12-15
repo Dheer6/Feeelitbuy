@@ -58,6 +58,292 @@ interface HomeProps {
   onSearch?: (query: string) => void;
 }
 
+// Category Carousel Component
+function CategoryCarousel({ 
+  title, 
+  products, 
+  onViewProduct, 
+  onViewAll, 
+  categoryColor 
+}: { 
+  title: string; 
+  products: Product[]; 
+  onViewProduct: (product: Product) => void; 
+  onViewAll: () => void;
+  categoryColor: string;
+}) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, [products]);
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = direction === 'left' ? -400 : 400;
+      scrollContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      setTimeout(checkScroll, 300);
+    }
+  };
+
+  if (products.length === 0) return null;
+
+  return (
+    <section style={{ padding: 'clamp(2.5rem, 5vw, 4rem) 0', backgroundColor: 'white' }}>
+      <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0 1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h2 style={{ fontSize: 'clamp(1.5rem, 3.5vw, 2rem)', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>
+              {title}
+            </h2>
+            <p style={{ fontSize: 'clamp(0.875rem, 1.5vw, 1rem)', color: '#6b7280' }}>
+              Explore our collection of {products.length}+ products
+            </p>
+          </div>
+          <button
+            onClick={onViewAll}
+            style={{
+              backgroundColor: '#4f46e5',
+              color: 'white',
+              padding: 'clamp(0.75rem, 1.5vw, 1rem) clamp(1.25rem, 2.5vw, 1.75rem)',
+              borderRadius: '0.75rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'all 0.3s',
+              fontSize: 'clamp(0.875rem, 1.5vw, 1rem)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#4338ca';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#4f46e5';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            View All
+            <ArrowRight style={{ width: '1.25rem', height: '1.25rem' }} />
+          </button>
+        </div>
+
+        <div style={{ position: 'relative' }}>
+          {/* Left Scroll Button */}
+          {canScrollLeft && (
+            <button
+              onClick={() => scroll('left')}
+              style={{
+                position: 'absolute',
+                left: '-1rem',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                backgroundColor: 'white',
+                border: 'none',
+                borderRadius: '50%',
+                width: '3rem',
+                height: '3rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                zIndex: 10,
+                transition: 'all 0.3s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#f3f4f6';
+                e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'white';
+                e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
+              }}
+            >
+              <ChevronLeft style={{ width: '1.5rem', height: '1.5rem', color: '#111827' }} />
+            </button>
+          )}
+
+          {/* Right Scroll Button */}
+          {canScrollRight && (
+            <button
+              onClick={() => scroll('right')}
+              style={{
+                position: 'absolute',
+                right: '-1rem',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                backgroundColor: 'white',
+                border: 'none',
+                borderRadius: '50%',
+                width: '3rem',
+                height: '3rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                zIndex: 10,
+                transition: 'all 0.3s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#f3f4f6';
+                e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'white';
+                e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
+              }}
+            >
+              <ChevronRight style={{ width: '1.5rem', height: '1.5rem', color: '#111827' }} />
+            </button>
+          )}
+
+          {/* Products Container */}
+          <div
+            ref={scrollContainerRef}
+            onScroll={checkScroll}
+            style={{
+              display: 'flex',
+              gap: '1.5rem',
+              overflowX: 'auto',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              padding: '0.5rem 0'
+            }}
+            className="hide-scrollbar"
+          >
+            {products.map((product) => (
+              <div
+                key={product.id}
+                onClick={() => onViewProduct(product)}
+                style={{
+                  cursor: 'pointer',
+                  minWidth: '280px',
+                  maxWidth: '280px',
+                  overflow: 'hidden',
+                  borderRadius: '1rem',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  transition: 'all 0.3s',
+                  backgroundColor: 'white'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
+                  e.currentTarget.style.transform = 'translateY(-0.5rem)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                <div style={{ position: 'relative', overflow: 'hidden', backgroundColor: '#f3f4f6', aspectRatio: '1' }}>
+                  <ImageWithFallback
+                    src={product.images?.[0] || ''}
+                    alt={product.name}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      transition: 'transform 0.5s'
+                    }}
+                  />
+                  {product.discount && product.discount > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '0.75rem',
+                      right: '0.75rem',
+                      backgroundColor: '#ef4444',
+                      color: 'white',
+                      padding: '0.375rem 0.75rem',
+                      borderRadius: '0.5rem',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}>
+                      -{product.discount}%
+                    </div>
+                  )}
+                  {product.stock < 10 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '0.75rem',
+                      left: '0.75rem',
+                      backgroundColor: '#f59e0b',
+                      color: 'white',
+                      padding: '0.375rem 0.75rem',
+                      borderRadius: '0.5rem',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}>
+                      Only {product.stock} left
+                    </div>
+                  )}
+                </div>
+                <div style={{ padding: '1.25rem' }}>
+                  <h3 style={{
+                    fontWeight: '600',
+                    fontSize: '1rem',
+                    color: '#111827',
+                    marginBottom: '0.5rem',
+                    overflow: 'hidden',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    minHeight: '3rem'
+                  }}>
+                    {product.name}
+                  </h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          style={{
+                            width: '0.875rem',
+                            height: '0.875rem',
+                            fill: i < Math.floor(product.rating) ? '#facc15' : 'transparent',
+                            color: i < Math.floor(product.rating) ? '#facc15' : '#d1d5db'
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>({product.reviewCount})</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#111827' }}>
+                      {formatINR(product.price)}
+                    </span>
+                    {product.originalPrice && product.originalPrice > product.price && (
+                      <span style={{ fontSize: '0.875rem', color: '#9ca3af', textDecoration: 'line-through' }}>
+                        {formatINR(product.originalPrice)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // Counter component for animated stats
 function StatCard({ 
   icon: Icon, 
@@ -177,6 +463,7 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onS
   const [downloadStatsInView, setDownloadStatsInView] = useState(false);
   const statsRef = useRef<HTMLDivElement>(null);
   const downloadStatsRef = useRef<HTMLDivElement>(null);
+  const [categoryProducts, setCategoryProducts] = useState<{ [key: string]: Product[] }>({});
 
   // Counter animation hook
   const useCountUp = (end: number, duration: number = 2000, start: number = 0) => {
@@ -472,6 +759,39 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onS
   }, [banners.length]);
 
   const featuredProducts = products.slice(0, 8);
+
+  // Fetch random products for each category
+  useEffect(() => {
+    const fetchCategoryProducts = () => {
+      const categoriesData: { [key: string]: Product[] } = {};
+      
+      // Get products for electronics category
+      const electronicsProducts = products
+        .filter(p => p.category === 'electronics')
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 10);
+      
+      if (electronicsProducts.length > 0) {
+        categoriesData['electronics'] = electronicsProducts;
+      }
+      
+      // Get products for furniture category
+      const furnitureProducts = products
+        .filter(p => p.category === 'furniture')
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 10);
+      
+      if (furnitureProducts.length > 0) {
+        categoriesData['furniture'] = furnitureProducts;
+      }
+      
+      setCategoryProducts(categoriesData);
+    };
+
+    if (products.length > 0) {
+      fetchCategoryProducts();
+    }
+  }, [products]);
   const trendingProducts = products.filter(p => p.rating >= 4.5).slice(0, 4);
   const dealsProducts = products.filter(p => p.discount && p.discount > 20).slice(0, 6);
   const newArrivals = products.slice(8, 12);
@@ -1405,6 +1725,27 @@ export function Home({ onNavigate, onCategoryClick, onViewProduct, products, onS
               </div>
             </div>
           </section>
+        )}
+
+        {/* Category Product Carousels */}
+        {categoryProducts['electronics'] && categoryProducts['electronics'].length > 0 && (
+          <CategoryCarousel
+            title="Electronics & Gadgets"
+            products={categoryProducts['electronics']}
+            onViewProduct={onViewProduct}
+            onViewAll={() => onCategoryClick('electronics')}
+            categoryColor="from-purple-500 to-pink-500"
+          />
+        )}
+
+        {categoryProducts['furniture'] && categoryProducts['furniture'].length > 0 && (
+          <CategoryCarousel
+            title="Furniture & Home Decor"
+            products={categoryProducts['furniture']}
+            onViewProduct={onViewProduct}
+            onViewAll={() => onCategoryClick('furniture')}
+            categoryColor="from-orange-500 to-red-500"
+          />
         )}
 
         {/* Featured Products */}
