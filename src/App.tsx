@@ -52,14 +52,55 @@ export default function App() {
   const [cartHydrated, setCartHydrated] = useState(false);
   const [wishlistHydrated, setWishlistHydrated] = useState(false);
   const [ordersHydrated, setOrdersHydrated] = useState(false);
+  const [loadingProductFromUrl, setLoadingProductFromUrl] = useState(false);
 
   // Sync URL with current page on mount and handle browser navigation
   useEffect(() => {
-    // Read initial page from URL
-    const path = window.location.pathname;
-    const initialPage = path === '/' || path === '' ? 'home' : path.substring(1);
-    if (initialPage !== currentPage) {
-      setCurrentPage(initialPage);
+    // Check for product query parameter first
+    const urlParams = new URLSearchParams(window.location.search);
+    const productId = urlParams.get('product');
+    
+    if (productId) {
+      // Load product and navigate to detail page
+      setLoadingProductFromUrl(true);
+      const loadProductFromUrl = async () => {
+        try {
+          console.log('Loading product from URL:', productId);
+          const product = await productService.getProduct(productId);
+          console.log('Product loaded:', product);
+          if (product) {
+            const adaptedProducts = await adaptDbProducts([product]);
+            console.log('Product adapted:', adaptedProducts);
+            if (adaptedProducts.length > 0) {
+              setSelectedProduct(adaptedProducts[0]);
+              setCurrentPage('product-detail');
+              console.log('Set page to product-detail');
+            } else {
+              setCurrentPage('home');
+              window.history.replaceState({ page: 'home' }, '', '/');
+            }
+          } else {
+            // Product not found
+            console.log('Product not found');
+            setCurrentPage('home');
+            window.history.replaceState({ page: 'home' }, '', '/');
+          }
+        } catch (error) {
+          console.error('Failed to load product from URL:', error);
+          setCurrentPage('home');
+          window.history.replaceState({ page: 'home' }, '', '/');
+        } finally {
+          setLoadingProductFromUrl(false);
+        }
+      };
+      loadProductFromUrl();
+    } else {
+      // Normal page initialization from URL path
+      const path = window.location.pathname;
+      const initialPage = path === '/' || path === '' ? 'home' : path.substring(1);
+      if (initialPage !== currentPage) {
+        setCurrentPage(initialPage);
+      }
     }
 
     // Handle browser back/forward buttons
@@ -76,13 +117,6 @@ export default function App() {
 
     window.addEventListener('popstate', handlePopState);
 
-    // Set initial state
-    window.history.replaceState(
-      { page: currentPage, category: selectedCategory, searchQuery },
-      '',
-      `/${currentPage === 'home' ? '' : currentPage}`
-    );
-
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
@@ -91,8 +125,23 @@ export default function App() {
   // Location tracking for logged-in users
   useLocationTracking(currentUser?.id || null);
 
-  // Update URL when page changes
+  // Track if this is initial mount to avoid duplicate history entries
+  const [isInitialMount, setIsInitialMount] = useState(true);
+
+  // Update URL when page changes (but not on initial mount)
   useEffect(() => {
+    if (isInitialMount) {
+      setIsInitialMount(false);
+      // Set initial history state without creating new entry
+      const url = currentPage === 'home' ? '/' : `/${currentPage}`;
+      window.history.replaceState(
+        { page: currentPage, category: selectedCategory, searchQuery },
+        '',
+        url
+      );
+      return;
+    }
+
     if (currentPage) {
       const url = currentPage === 'home' ? '/' : `/${currentPage}`;
       window.history.pushState(
@@ -512,7 +561,7 @@ export default function App() {
     }
   };
 
-  const placeOrder = async (shippingDetails: any, paymentMethod: string, coupon?: any, discountAmount?: number) => {
+  const placeOrder = async (shippingDetails: any, paymentMethod: string, coupon?: any, discountAmount?: number, walletCoinsUsed?: number) => {
     if (!currentUser) {
       alert('Please login to place an order');
       return;
@@ -578,6 +627,22 @@ export default function App() {
         } catch (couponErr: any) {
           console.error('Failed to record coupon usage:', couponErr);
           // Non-fatal
+        }
+      }
+
+      // Deduct wallet coins if used
+      if (walletCoinsUsed && walletCoinsUsed > 0) {
+        try {
+          const { walletService } = await import('./lib/supabaseService');
+          await walletService.deductAmount(
+            walletCoinsUsed,
+            `Payment for Order #${createdOrder.id}`,
+            createdOrder.id
+          );
+          console.log(`Deducted ${walletCoinsUsed} from wallet for order ${createdOrder.id}`);
+        } catch (walletErr: any) {
+          console.error('Failed to deduct wallet coins:', walletErr);
+          // Non-fatal - order is created, wallet deduction can be handled manually if needed
         }
       }
 
@@ -922,7 +987,7 @@ export default function App() {
     }
   };
 
-  if (authLoading) {
+  if (authLoading || loadingProductFromUrl) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center relative overflow-hidden">
         {/* Subtle animated background */}

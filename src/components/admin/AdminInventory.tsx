@@ -440,11 +440,16 @@ export function AdminInventory({ products, onUpdateStock, onUpdateColorStock }: 
                     ))}
                   </div>
                   <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold">Total Stock:</span>
-                      <span className="text-2xl font-bold text-blue-600">
-                        {editingColors.reduce((sum, color) => sum + color.stock, 0)}
-                      </span>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold">Total Combined Stock:</span>
+                        <span className="text-2xl font-bold text-blue-600">
+                          {editingColors.reduce((sum, color) => sum + color.stock, 0)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-blue-700">
+                        ⓘ Each color variant has separate stock. Total is the sum of all color stocks.
+                      </p>
                     </div>
                   </div>
                 </div>

@@ -799,7 +799,7 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
                   {editingColorIndex !== null && (
                     <div className="border-t pt-3 space-y-2">
                       <div className="flex items-center justify-between">
-                        <Label className="text-xs font-semibold">Images for {newColor.name}</Label>
+                        <Label className="text-xs font-semibold">Images for {newColor.name} ({newColor.images?.length || 0})</Label>
                         <label htmlFor="color-image-upload">
                           <Button
                             type="button"
@@ -825,27 +825,31 @@ export function AdminProducts({ products, onProductsChange }: AdminProductsProps
                         />
                       </div>
 
-                      {/* Color Image Previews */}
-                      {newColor.images && newColor.images.length > 0 && (
-                        <div className="grid grid-cols-4 gap-2">
+                      {/* Color Image Previews - Always show if images exist */}
+                      {newColor.images && newColor.images.length > 0 ? (
+                        <div className="grid grid-cols-4 gap-2 p-2 bg-gray-50 rounded">
                           {newColor.images.map((url, idx) => (
-                            <div key={idx} className="relative group">
+                            <div key={idx} className="relative group aspect-square">
                               <img
                                 src={url}
                                 alt={`${newColor.name} ${idx + 1}`}
-                                className="w-full h-20 object-cover rounded border"
+                                className="w-full h-full object-cover rounded border-2 border-gray-200 group-hover:border-indigo-400 transition-colors"
                               />
                               <Button
                                 type="button"
                                 variant="destructive"
                                 size="sm"
-                                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                                className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 rounded-full shadow-lg"
                                 onClick={() => handleRemoveColorImage(idx)}
                               >
                                 <X className="w-3 h-3" />
                               </Button>
                             </div>
                           ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 bg-gray-50 rounded border-2 border-dashed border-gray-200">
+                          <p className="text-xs text-gray-500">No images uploaded yet</p>
                         </div>
                       )}
                     </div>

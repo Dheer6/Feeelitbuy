@@ -645,12 +645,23 @@ export const reviewService = {
   async getProductReviews(productId: string) {
     const { data, error } = await supabase
       .from('reviews')
-      .select('id, product_id, user_id, rating, comment, created_at, images, profiles(full_name)')
+      .select('id, product_id, user_id, rating, comment, created_at, image_urls, profiles(full_name)')
       .eq('product_id', productId)
       .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching reviews:', error);
+      // If column doesn't exist, try without image_urls
+      if (error.code === '42703') {
+        const { data: dataNoImages, error: errorNoImages } = await supabase
+          .from('reviews')
+          .select('id, product_id, user_id, rating, comment, created_at, profiles(full_name)')
+          .eq('product_id', productId)
+          .order('created_at', { ascending: false });
+        
+        if (errorNoImages) throw errorNoImages;
+        return dataNoImages;
+      }
       throw error;
     }
     
@@ -663,7 +674,9 @@ export const reviewService = {
     const user = await authService.getCurrentUser();
     if (!user) throw new Error('Not authenticated');
 
-    // Try with images first, fallback to without images if schema cache issue
+    console.log('Creating review with images:', imageUrls);
+
+    // Insert review with images if provided
     try {
       const { data, error } = await supabase
         .from('reviews')
@@ -672,12 +685,13 @@ export const reviewService = {
           user_id: user.id,
           rating,
           comment,
-          images: imageUrls || [],
+          image_urls: imageUrls || [],
         })
         .select('*, profiles(full_name)')
         .single();
 
       if (error) {
+        console.error('Review insert error:', error);
         // If schema cache error, try without images field
         if (error.code === 'PGRST204' || error.message?.includes('schema cache')) {
           console.warn('Schema cache issue, inserting without images field');
@@ -741,7 +755,7 @@ export const reviewService = {
       const { data: buckets } = await supabase.storage.listBuckets();
       console.log('Available buckets:', buckets?.map(b => b.name));
       
-      const reviewBucket = buckets?.find(b => b.id === 'reviews');
+      const reviewBucket = buckets?.find(b => b.name === 'reviews');
       if (!reviewBucket) {
         throw new Error('Reviews bucket not found in list. Available buckets: ' + buckets?.map(b => b.name).join(', '));
       }
@@ -779,10 +793,35 @@ export const reviewService = {
   },
 
   // Update review
-  async updateReview(reviewId: string, rating: number, comment: string) {
+  async updateReview(reviewId: string, rating: number, comment: string, imageUrls?: string[]) {
+    const user = await authService.getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
+
+    // Verify user owns this review
+    const { data: existingReview } = await supabase
+      .from('reviews')
+      .select('user_id')
+      .eq('id', reviewId)
+      .single();
+
+    if (!existingReview || existingReview.user_id !== user.id) {
+      throw new Error('Unauthorized to edit this review');
+    }
+
+    const updateData: any = { 
+      rating, 
+      comment, 
+      updated_at: new Date().toISOString() 
+    };
+    
+    // Include images if provided
+    if (imageUrls !== undefined) {
+      updateData.image_urls = imageUrls;
+    }
+
     const { data, error } = await supabase
       .from('reviews')
-      .update({ rating, comment })
+      .update(updateData)
       .eq('id', reviewId)
       .select('*, profiles(full_name)')
       .single();
@@ -799,11 +838,21 @@ export const reviewService = {
 
   // Delete review
   async deleteReview(reviewId: string) {
-    const { data: review } = await supabase
+    const user = await authService.getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
+
+    // Get review details and verify ownership
+    const { data: review, error: fetchError } = await supabase
       .from('reviews')
-      .select('product_id')
+      .select('product_id, user_id')
       .eq('id', reviewId)
       .single();
+
+    if (fetchError) throw fetchError;
+    
+    if (!review || review.user_id !== user.id) {
+      throw new Error('Unauthorized to delete this review');
+    }
 
     const { error } = await supabase
       .from('reviews')

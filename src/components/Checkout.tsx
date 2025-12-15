@@ -21,7 +21,7 @@ const RAZORPAY_KEY = 'rzp_test_NgwEwXk1hnhpL6';
 
 interface CheckoutProps {
   items: CartItem[];
-  onPlaceOrder: (shippingDetails: Address, paymentMethod: string, coupon?: any, discountAmount?: number) => void;
+  onPlaceOrder: (shippingDetails: Address, paymentMethod: string, coupon?: any, discountAmount?: number, walletCoinsUsed?: number) => void;
   onBack: () => void;
   user: User | null;
 }
@@ -59,6 +59,33 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
   const [cardOfferDiscount, setCardOfferDiscount] = useState<number>(0);
   const [loadingCardOffers, setLoadingCardOffers] = useState(true);
 
+  // Wallet coins state
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [useWalletCoins, setUseWalletCoins] = useState<boolean>(false);
+  const [walletCoinsToUse, setWalletCoinsToUse] = useState<number>(0);
+  const [loadingWallet, setLoadingWallet] = useState(true);
+
+  // Load wallet balance
+  useEffect(() => {
+    const fetchWallet = async () => {
+      if (!user) {
+        setLoadingWallet(false);
+        return;
+      }
+      try {
+        const { walletService } = await import('../lib/supabaseService');
+        const wallet = await walletService.getWallet();
+        setWalletBalance(wallet?.balance || 0);
+      } catch (err) {
+        console.error('Failed to load wallet:', err);
+        setWalletBalance(0);
+      } finally {
+        setLoadingWallet(false);
+      }
+    };
+    fetchWallet();
+  }, [user]);
+
   // Load card offers
   useEffect(() => {
     const fetchCardOffers = async () => {
@@ -75,8 +102,19 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
     fetchCardOffers();
   }, []);
 
+  // Calculate wallet coins to use
+  useEffect(() => {
+    if (useWalletCoins && walletBalance > 0) {
+      // Can use up to 50% of order total or entire wallet balance, whichever is less
+      const maxUsable = Math.min(walletBalance, (subtotal + shipping + tax - discountAmount - cardOfferDiscount) * 0.5);
+      setWalletCoinsToUse(Math.max(0, maxUsable));
+    } else {
+      setWalletCoinsToUse(0);
+    }
+  }, [useWalletCoins, walletBalance, subtotal, shipping, tax, discountAmount, cardOfferDiscount]);
+
   // Compute total after discounts
-  const total = Math.max(0, subtotal + shipping + tax - discountAmount - cardOfferDiscount);
+  const total = Math.max(0, subtotal + shipping + tax - discountAmount - cardOfferDiscount - walletCoinsToUse);
   
   // Check if COD is available (only for orders below 5000)
   const isCODAvailable = total < 5000;
@@ -128,7 +166,7 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
       // COD - directly place order
       setIsProcessing(true);
       try {
-        await onPlaceOrder(shippingDetails, 'cod', appliedCoupon, discountAmount);
+        await onPlaceOrder(shippingDetails, 'cod', appliedCoupon, discountAmount, walletCoinsToUse);
       } catch (error) {
         console.error('Order placement failed:', error);
         setIsProcessing(false);
@@ -158,8 +196,8 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
         // Payment successful
         console.log('Payment successful:', response);
         setIsProcessing(false);
-        // Now place the order with payment ID
-        onPlaceOrder(shippingDetails, `razorpay_${response.razorpay_payment_id}`, appliedCoupon, discountAmount);
+        // Now place the order with payment ID and wallet coins used
+        onPlaceOrder(shippingDetails, `razorpay_${response.razorpay_payment_id}`, appliedCoupon, discountAmount, walletCoinsToUse);
       },
       prefill: {
         name: shippingDetails.name || user?.name || '',
@@ -465,6 +503,38 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
                 </div>
               )}
 
+              {/* Wallet Coins */}
+              {!loadingWallet && walletBalance > 0 && (
+                <div className="mb-6 p-4 border rounded-lg bg-gradient-to-r from-orange-50 to-orange-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="w-5 h-5 text-orange-600" />
+                      <Label className="text-sm font-semibold">Use Wallet Coins</Label>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={useWalletCoins}
+                        onChange={(e) => setUseWalletCoins(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div>
+                    </label>
+                  </div>
+                  <div className="text-sm text-gray-700">
+                    <p className="mb-1">Available Balance: <span className="font-bold text-orange-600">{formatINR(walletBalance)}</span></p>
+                    {useWalletCoins && walletCoinsToUse > 0 && (
+                      <p className="text-green-600 font-semibold">
+                        ✓ Using {formatINR(walletCoinsToUse)} from wallet (Save up to 50% of order total)
+                      </p>
+                    )}
+                    {useWalletCoins && walletCoinsToUse === 0 && (
+                      <p className="text-gray-500 text-xs">Not enough balance or already at maximum discount</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Coupon Code */}
               <div className="mb-6">
                 <Label htmlFor="coupon" className="mb-2 block">Coupon Code</Label>
@@ -561,6 +631,12 @@ export function Checkout({ items, onPlaceOrder, onBack, user }: CheckoutProps) {
                   <div className="flex justify-between text-green-600">
                     <span>Discount ({appliedCoupon?.code})</span>
                     <span>-{formatINR(discountAmount)}</span>
+                  </div>
+                )}
+                {walletCoinsToUse > 0 && (
+                  <div className="flex justify-between text-orange-600 font-semibold">
+                    <span>Wallet Coins</span>
+                    <span>-{formatINR(walletCoinsToUse)}</span>
                   </div>
                 )}
                 <div className="border-t pt-3 flex justify-between font-semibold text-lg">

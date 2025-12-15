@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Heart, Minus, Plus, ShoppingCart, Star, Truck, Shield, RotateCcw, AlertTriangle, Package, Zap, Upload, X, Share2 } from 'lucide-react';
+import { ArrowLeft, Heart, Minus, Plus, ShoppingCart, Star, Truck, Shield, RotateCcw, AlertTriangle, Package, Zap, Upload, X, Share2, Edit2, Trash2 } from 'lucide-react';
 import { Product, User } from '../types';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -48,6 +48,13 @@ export function ProductDetail({
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
   const [loadingRecommended, setLoadingRecommended] = useState(true);
   const [show360Viewer, setShow360Viewer] = useState(false);
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [editReviewText, setEditReviewText] = useState('');
+  const [editReviewRating, setEditReviewRating] = useState(0);
+  const [editReviewImages, setEditReviewImages] = useState<string[]>([]);
+  const [editNewImages, setEditNewImages] = useState<File[]>([]);
+  const [editImagePreviews, setEditImagePreviews] = useState<string[]>([]);
+  const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
 
   // Get images and price to display based on selected color
   const selectedColorData = product.colors?.find(c => c.name === selectedColor);
@@ -81,7 +88,9 @@ export function ProductDetail({
 
       switch (platform) {
         case 'whatsapp':
-          window.open(`https://wa.me/?text=${encodeURIComponent(shareText + ' ' + productUrl)}`, '_blank');
+          // Format with line breaks for WhatsApp
+          const whatsappText = `Check out this amazing product! 🛍️\n\n*${product.name}*\n💰 Price: ${formatINR(product.price)}\n\n🔗 ${productUrl}\n\nShop now on Feel It Buy! ✨`;
+          window.open(`https://wa.me/?text=${encodeURIComponent(whatsappText)}`, '_blank');
           break;
         case 'facebook':
           window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(productUrl)}`, '_blank');
@@ -267,11 +276,12 @@ export function ProductDetail({
             ))}
           </div>
           <div className="flex-1 space-y-4">
-            <div className="rounded-lg overflow-hidden bg-gray-100 relative">
+            <div className="rounded-lg overflow-hidden bg-gray-100 relative" style={{ aspectRatio: '1/1' }}>
               <ImageWithFallback
                 src={displayImages[selectedImage] || ''}
                 alt={product.name}
-                className="w-full aspect-square object-cover"
+                className="w-full h-full object-contain"
+                style={{ maxHeight: '600px' }}
               />
               {/* 360° Rotation Button */}
               {product.rotation_images && product.rotation_images.length > 0 && (
@@ -460,36 +470,50 @@ export function ProductDetail({
                 className="relative"
               >
                 <Share2 className="w-5 h-5" />
-                <div id="share-dropdown" className="hidden absolute right-0 top-full mt-2 bg-white border rounded-lg shadow-lg p-2 z-10 min-w-[200px]">
-                  <button
-                    onClick={() => handleShare('whatsapp')}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
-                  >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
-                    WhatsApp
-                  </button>
-                  <button
-                    onClick={() => handleShare('facebook')}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
-                  >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
-                    Facebook
-                  </button>
-                  <button
-                    onClick={() => handleShare('twitter')}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
-                  >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" /></svg>
-                    Twitter
-                  </button>
-                  <button
-                    onClick={() => handleShare('copy')}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
-                  >
-                    {shareSuccess ? '✓ Copied!' : '📋 Copy Link'}
-                  </button>
-                </div>
               </Button>
+              
+              {/* Share dropdown - positioned outside button to avoid nesting */}
+              <div id="share-dropdown" className="hidden absolute right-0 mt-16 bg-white border rounded-lg shadow-lg p-2 z-10 min-w-[200px]">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleShare('whatsapp')}
+                  onKeyDown={(e) => e.key === 'Enter' && handleShare('whatsapp')}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2 cursor-pointer"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
+                  WhatsApp
+                </div>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleShare('facebook')}
+                  onKeyDown={(e) => e.key === 'Enter' && handleShare('facebook')}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2 cursor-pointer"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
+                  Facebook
+                </div>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleShare('twitter')}
+                  onKeyDown={(e) => e.key === 'Enter' && handleShare('twitter')}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2 cursor-pointer"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" /></svg>
+                  Twitter
+                </div>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleShare('copy')}
+                  onKeyDown={(e) => e.key === 'Enter' && handleShare('copy')}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2 cursor-pointer"
+                >
+                  {shareSuccess ? '✓ Copied!' : '📋 Copy Link'}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -739,39 +763,257 @@ export function ProductDetail({
 
           {/* Display submitted reviews */}
           <div className="mt-8">
-            <h3 className="text-lg font-bold mb-4">Customer Reviews</h3>
+            <h3 className="text-xl font-bold mb-4">Customer Reviews ({reviews.length})</h3>
             {loadingReviews ? (
-              <p className="text-gray-500">Loading reviews...</p>
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                <p className="text-gray-500 ml-3">Loading reviews...</p>
+              </div>
             ) : reviews.length === 0 ? (
-              <p className="text-gray-500">No reviews yet.</p>
+              <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                <p className="text-gray-500 text-lg">No reviews yet. Be the first to review this product!</p>
+              </div>
             ) : (
               <div className="space-y-6">
                 {reviews.map((r) => (
-                  <div key={r.id} className="border-b pb-4">
-                    <div className="flex items-center gap-3 mb-1">
-                      <span className="font-semibold text-gray-900">{r.profiles?.full_name || 'Anonymous'}</span>
-                      <span className="flex gap-1">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star key={star} className={`w-4 h-4 ${r.rating >= star ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-300 text-gray-300'}`} />
-                        ))}
-                      </span>
-                      <span className="text-xs text-gray-500">{new Date(r.created_at).toLocaleDateString()}</span>
-                    </div>
-                    <div className="text-gray-700 whitespace-pre-line mb-3">{r.comment}</div>
-
-                    {/* Review Images */}
-                    {r.images && r.images.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {r.images.map((imageUrl: string, idx: number) => (
-                          <img
-                            key={idx}
-                            src={imageUrl}
-                            alt={`Review image ${idx + 1}`}
-                            className="w-20 h-20 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
-                            onClick={() => window.open(imageUrl, '_blank')}
-                          />
-                        ))}
+                  <div key={r.id} className="border-b pb-6 last:border-b-0">
+                    {editingReviewId === r.id ? (
+                      /* Edit Form */
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-semibold">Edit Your Review</h4>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              editImagePreviews.forEach(url => URL.revokeObjectURL(url));
+                              setEditingReviewId(null);
+                              setEditReviewText('');
+                              setEditReviewRating(0);
+                              setEditReviewImages([]);
+                              setEditNewImages([]);
+                              setEditImagePreviews([]);
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                        <div className="flex gap-1 mb-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              type="button"
+                              key={star}
+                              onClick={() => setEditReviewRating(star)}
+                              className="focus:outline-none"
+                            >
+                              <Star className={`w-7 h-7 ${editReviewRating >= star ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-300 text-gray-300'}`} />
+                            </button>
+                          ))}
+                        </div>
+                        <textarea
+                          value={editReviewText}
+                          onChange={(e) => setEditReviewText(e.target.value)}
+                          className="w-full border rounded-lg p-3 min-h-[80px]"
+                          placeholder="Update your review..."
+                        />
+                        
+                        {/* Image Management */}
+                        <div className="space-y-2">
+                          <label className="font-semibold text-sm">Review Images</label>
+                          
+                          {/* Existing Images */}
+                          {editReviewImages.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {editReviewImages.map((url, idx) => (
+                                <div key={idx} className="relative w-24 h-24 border rounded-lg overflow-hidden">
+                                  <img src={url} alt={`Review ${idx + 1}`} className="w-full h-full object-cover" />
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditReviewImages(prev => prev.filter((_, i) => i !== idx))}
+                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* New Images Previews */}
+                          {editImagePreviews.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {editImagePreviews.map((url, idx) => (
+                                <div key={idx} className="relative w-24 h-24 border rounded-lg overflow-hidden">
+                                  <img src={url} alt={`New ${idx + 1}`} className="w-full h-full object-cover" />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      URL.revokeObjectURL(url);
+                                      setEditNewImages(prev => prev.filter((_, i) => i !== idx));
+                                      setEditImagePreviews(prev => prev.filter((_, i) => i !== idx));
+                                    }}
+                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* Add Images Button */}
+                          {(editReviewImages.length + editNewImages.length) < 5 && (
+                            <label className="inline-flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors">
+                              <Upload className="w-4 h-4" />
+                              <span className="text-sm">Add Images</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={(e) => {
+                                  const files = e.target.files;
+                                  if (!files) return;
+                                  const newFiles = Array.from(files);
+                                  const totalImages = editReviewImages.length + editNewImages.length + newFiles.length;
+                                  if (totalImages > 5) {
+                                    alert('Maximum 5 images allowed per review');
+                                    return;
+                                  }
+                                  const previews = newFiles.map(f => URL.createObjectURL(f));
+                                  setEditNewImages(prev => [...prev, ...newFiles]);
+                                  setEditImagePreviews(prev => [...prev, ...previews]);
+                                }}
+                                className="hidden"
+                              />
+                            </label>
+                          )}
+                          <p className="text-xs text-gray-500">{5 - editReviewImages.length - editNewImages.length} images remaining</p>
+                        </div>
+                        
+                        <Button
+                          onClick={async () => {
+                            try {
+                              const { reviewService } = await import('../lib/supabaseService');
+                              
+                              // Upload new images if any
+                              let newImageUrls: string[] = [];
+                              if (editNewImages.length > 0 && currentUser) {
+                                try {
+                                  newImageUrls = await Promise.all(
+                                    editNewImages.map(file => reviewService.uploadReviewImage(file, currentUser.id))
+                                  );
+                                } catch (imgErr) {
+                                  console.warn('Image upload failed:', imgErr);
+                                }
+                              }
+                              
+                              // Combine existing and new images
+                              const allImages = [...editReviewImages, ...newImageUrls];
+                              
+                              await reviewService.updateReview(r.id, editReviewRating, editReviewText, allImages);
+                              
+                              // Cleanup
+                              editImagePreviews.forEach(url => URL.revokeObjectURL(url));
+                              setEditingReviewId(null);
+                              setEditReviewText('');
+                              setEditReviewRating(0);
+                              setEditReviewImages([]);
+                              setEditNewImages([]);
+                              setEditImagePreviews([]);
+                              
+                              // Refresh reviews
+                              const data = await reviewService.getProductReviews(product.id);
+                              setReviews(data || []);
+                            } catch (err) {
+                              console.error('Failed to update review:', err);
+                              alert('Failed to update review. Please try again.');
+                            }
+                          }}
+                          disabled={!editReviewText || editReviewRating === 0}
+                        >
+                          Save Changes
+                        </Button>
                       </div>
+                    ) : (
+                      /* Display Review */
+                      <>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <span className="font-semibold text-gray-900">{r.profiles?.full_name || 'Anonymous'}</span>
+                            <span className="flex gap-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star key={star} className={`w-4 h-4 ${r.rating >= star ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-300 text-gray-300'}`} />
+                              ))}
+                            </span>
+                            <span className="text-xs text-gray-500">{new Date(r.created_at).toLocaleDateString()}</span>
+                          </div>
+                          {/* Edit/Delete buttons - only show for review author */}
+                          {currentUser && r.user_id === currentUser.id && (
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingReviewId(r.id);
+                                  setEditReviewText(r.comment);
+                                  setEditReviewRating(r.rating);
+                                  setEditReviewImages(r.image_urls || []);
+                                  setEditNewImages([]);
+                                  setEditImagePreviews([]);
+                                }}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={async () => {
+                                  if (window.confirm('Are you sure you want to delete this review?')) {
+                                    try {
+                                      setDeletingReviewId(r.id);
+                                      const { reviewService } = await import('../lib/supabaseService');
+                                      await reviewService.deleteReview(r.id);
+                                      // Refresh reviews
+                                      const data = await reviewService.getProductReviews(product.id);
+                                      setReviews(data || []);
+                                    } catch (err) {
+                                      console.error('Failed to delete review:', err);
+                                      alert('Failed to delete review. Please try again.');
+                                    } finally {
+                                      setDeletingReviewId(null);
+                                    }
+                                  }
+                                }}
+                                disabled={deletingReviewId === r.id}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-gray-700 whitespace-pre-line mb-3">{r.comment}</div>
+
+                        {/* Review Images */}
+                        {r.image_urls && Array.isArray(r.image_urls) && r.image_urls.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-3">
+                            {r.image_urls.map((imageUrl: string, idx: number) => (
+                              <img
+                                key={idx}
+                                src={imageUrl}
+                                alt={`Review image ${idx + 1}`}
+                                className="w-24 h-24 object-cover rounded-lg border cursor-pointer hover:opacity-80 hover:scale-105 transition-all"
+                                onClick={() => window.open(imageUrl, '_blank')}
+                                onError={(e) => {
+                                  console.error('Failed to load image:', imageUrl);
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 ))}
